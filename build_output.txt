@@ -1,0 +1,113 @@
+
+> evting-hub@0.1.0 build
+> next build
+
+⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\Administrator\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\Administrator\evting-hub\package-lock.json
+
+▲ Next.js 16.2.0 (Turbopack)
+- Environments: .env.local
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+
+> Build error occurred
+Error: Turbopack build failed with 5 errors:
+./evting-hub/src/app/sign-in/page.tsx:1:43
+Expected ';', '}' or <eof>
+> 1 | ...mport { SignIn } from "@clerk/nextjs";`n`nexport default function Page() { return <SignI...
+    |                                             ^^^^^^^
+  2 | ...
+
+Parsing ecmascript source code failed
+
+
+./evting-hub/src/components/Navbar.tsx:6:1
+Export SignedIn doesn't exist in target module
+  4 | import { motion } from "framer-motion";
+  5 | import { Wallet, Activity } from "lucide-react";
+> 6 | import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  7 | import GlobalSearch from "./GlobalSearch";
+  8 | export default function Navbar() {
+  9 |   const $ = _c(10);
+
+The export SignedIn was not found in module [project]/evting-hub/node_modules/@clerk/nextjs/dist/esm/index.js [app-client] (ecmascript).
+Did you mean to import SignIn?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./evting-hub/src/components/Navbar.tsx
+    ./evting-hub/src/app/layout.tsx
+
+
+./evting-hub/src/components/Navbar.tsx:5:1
+Export SignedIn doesn't exist in target module
+  3 | import { motion } from "framer-motion";
+  4 | import { Wallet, Activity } from "lucide-react";
+> 5 | import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import GlobalSearch from "./GlobalSearch";
+  7 |
+  8 | export default function Navbar() {
+
+The export SignedIn was not found in module [project]/evting-hub/node_modules/@clerk/nextjs/dist/esm/index.js [app-ssr] (ecmascript).
+Did you mean to import SignIn?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./evting-hub/src/components/Navbar.tsx
+    ./evting-hub/src/app/layout.tsx
+
+
+./evting-hub/src/components/Navbar.tsx:6:1
+Export SignedOut doesn't exist in target module
+  4 | import { motion } from "framer-motion";
+  5 | import { Wallet, Activity } from "lucide-react";
+> 6 | import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  7 | import GlobalSearch from "./GlobalSearch";
+  8 | export default function Navbar() {
+  9 |   const $ = _c(10);
+
+The export SignedOut was not found in module [project]/evting-hub/node_modules/@clerk/nextjs/dist/esm/index.js [app-client] (ecmascript).
+Did you mean to import SignOutButton?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./evting-hub/src/components/Navbar.tsx
+    ./evting-hub/src/app/layout.tsx
+
+
+./evting-hub/src/components/Navbar.tsx:5:1
+Export SignedOut doesn't exist in target module
+  3 | import { motion } from "framer-motion";
+  4 | import { Wallet, Activity } from "lucide-react";
+> 5 | import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  6 | import GlobalSearch from "./GlobalSearch";
+  7 |
+  8 | export default function Navbar() {
+
+The export SignedOut was not found in module [project]/evting-hub/node_modules/@clerk/nextjs/dist/esm/index.js [app-ssr] (ecmascript).
+Did you mean to import SignOutButton?
+All exports of the module are statically known (It doesn't have dynamic exports). So it's known statically that the requested export doesn't exist.
+
+Import trace:
+  Server Component:
+    ./evting-hub/src/components/Navbar.tsx
+    ./evting-hub/src/app/layout.tsx
+
+
+    at <unknown> (./evting-hub/src/app/sign-in/page.tsx:1:43)
+    at <unknown> (./evting-hub/src/components/Navbar.tsx:6:1)
+    at <unknown> (./evting-hub/src/components/Navbar.tsx:5:1)
+    at <unknown> (./evting-hub/src/components/Navbar.tsx:6:1)
+    at <unknown> (./evting-hub/src/components/Navbar.tsx:5:1)

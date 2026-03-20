@@ -1,0 +1,105 @@
+"use server";
+
+import { createServerSupabase } from "@/lib/supabase";
+import { requireAuth } from "@/lib/actions";
+import { getRank, XP_REWARDS } from "@/lib/rank";
+
+const sb = () => createServerSupabase();
+
+/* ─── Profile Updates ─── */
+
+export async function updateProfile(formData: FormData) {
+  const user = await requireAuth();
+  const bio = formData.get("bio") as string;
+  const youtube_url = formData.get("youtube_url") as string;
+
+  const { error } = await sb()
+    .from("users")
+    .update({
+      bio: bio?.slice(0, 500) ?? "",
+      youtube_url: youtube_url || null,
+    })
+    .eq("id", user.id);
+
+  if (error) throw new Error("Failed to update profile");
+  return { success: true };
+}
+
+export async function updateBanner(bannerUrl: string) {
+  const user = await requireAuth();
+  await sb().from("users").update({ banner_url: bannerUrl }).eq("id", user.id);
+  return { success: true };
+}
+
+/* ─── Follow / Unfollow ─── */
+
+export async function followUser(targetId: string) {
+  const user = await requireAuth();
+  if (user.id === targetId) return { error: "Cannot follow yourself" };
+
+  const { error } = await sb()
+    .from("follows")
+    .insert({ follower_id: user.id, following_id: targetId });
+
+  if (error?.code === "23505") return { error: "Already following" };
+  if (error) throw error;
+
+  // Award XP to the followed user
+  await sb().rpc("increment_xp", {
+    user_id_param: targetId,
+    amount: XP_REWARDS.FOLLOWER_GAINED,
+  });
+
+  return { success: true };
+}
+
+export async function unfollowUser(targetId: string) {
+  const user = await requireAuth();
+  await sb()
+    .from("follows")
+    .delete()
+    .eq("follower_id", user.id)
+    .eq("following_id", targetId);
+  return { success: true };
+}
+
+/* ─── Fetch Profile Data ─── */
+
+export async function getProfile(userId: string) {
+  const { data: profile } = await sb()
+    .from("users")
+    .select("*")
+    .eq("id", userId)
+    .single();
+
+  if (!profile) return null;
+
+  // Get counts
+  const [followers, following, projects] = await Promise.all([
+    sb().from("follows").select("*", { count: "exact", head: true }).eq("following_id", userId),
+    sb().from("follows").select("*", { count: "exact", head: true }).eq("follower_id", userId),
+    sb().from("projects").select("*").eq("user_id", userId).eq("is_published", true).order("created_at", { ascending: false }),
+  ]);
+
+  // Compute rank
+  const rank = getRank(profile.xp ?? 0);
+
+  return {
+    ...profile,
+    rank: rank.name,
+    rankColor: rank.color,
+    followerCount: followers.count ?? 0,
+    followingCount: following.count ?? 0,
+    projects: projects.data ?? [],
+  };
+}
+
+export async function isFollowing(currentUserId: string, targetUserId: string) {
+  const { data } = await sb()
+    .from("follows")
+    .select("follower_id")
+    .eq("follower_id", currentUserId)
+    .eq("following_id", targetUserId)
+    .maybeSingle();
+  return !!data;
+}

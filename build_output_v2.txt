@@ -1,0 +1,31 @@
+
+> evting-hub@0.1.0 build
+> next build
+
+⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\Administrator\package-lock.json as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\Administrator\evting-hub\package-lock.json
+
+▲ Next.js 16.2.0 (Turbopack)
+- Environments: .env.local
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+✓ Compiled successfully in 38.0s
+  Running TypeScript ...
+Failed to type check.
+
+.next/dev/types/validator.ts:107:39
+Type error: File 'C:/Users/Administrator/evting-hub/src/app/sign-up/[[...sign-up]]/page.tsx' is not a module.
+
+  105 | {
+  106 |   type __IsExpected<Specific extends AppPageConfig<"/sign-up/[[...sign-up]]">> = Specific
+> 107 |   const handler = {} as typeof import("../../../src/app/sign-up/[[...sign-up]]/page.js")
+      |                                       ^
+  108 |   type __Check = __IsExpected<typeof handler>
+  109 |   // @ts-ignore
+  110 |   type __Unused = __Check
+Next.js build worker exited with code: 1 and signal: null

@@ -1,0 +1,7 @@
+src/app/profile/[id]/page.tsx(2,41): error TS2307: Cannot find module './actions' or its corresponding type declarations.
+src/components/chat/ChatClient.tsx(56,28): error TS2554: Expected 1 arguments, but got 0.
+src/components/GlobalSearch.tsx(17,23): error TS2554: Expected 1 arguments, but got 0.
+src/lib/rank.ts(20,27): error TS2322: Type '{ readonly name: "Novice"; readonly minXP: 0; readonly color: "#71717a"; } | { readonly name: "Apprentice"; readonly minXP: 50; readonly color: "#22c55e"; } | { readonly name: "Journeyman"; readonly minXP: 150; readonly color: "#3b82f6"; } | { ...; } | { ...; } | { ...; }' is not assignable to type '{ readonly name: "Novice"; readonly minXP: 0; readonly color: "#71717a"; }'.
+  Type '{ readonly name: "Apprentice"; readonly minXP: 50; readonly color: "#22c55e"; }' is not assignable to type '{ readonly name: "Novice"; readonly minXP: 0; readonly color: "#71717a"; }'.
+    Types of property 'name' are incompatible.
+      Type '"Apprentice"' is not assignable to type '"Novice"'.
