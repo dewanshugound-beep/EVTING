@@ -19,9 +19,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EVTING HUB — The Dev Hub",
-  description:
-    "Where elite developers drop code and talk. Encrypted vault, real-time chat, and curated dev resources.",
+  title: "MatrixIN",
+  description: "Enter the Matrix. Your ultimate full-stack hub.",
 };
 
 export default function RootLayout({
