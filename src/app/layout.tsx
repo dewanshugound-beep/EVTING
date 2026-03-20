@@ -21,11 +21,14 @@ const geistMono = Geist_Mono({
 
 import VisitorTracker from "@/components/VisitorTracker";
 
+export const viewport = {
+  themeColor: "#10b981",
+};
+
 export const metadata: Metadata = {
   title: "MatrixIN — Enter the Digital Frontier",
   description: "Unauthorized archives, encrypted signals, and the ultimate developer hub within the Matrix.",
   manifest: "/manifest.json",
-  themeColor: "#10b981",
   openGraph: {
     title: "MatrixIN",
     description: "Enter the Digital Frontier",
