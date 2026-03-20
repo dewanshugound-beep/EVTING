@@ -12,10 +12,14 @@ export async function updateProfile(formData: FormData) {
   const user = await requireAuth();
   const bio = formData.get("bio") as string;
   const youtube_url = formData.get("youtube_url") as string;
+  const display_name = formData.get("display_name") as string;
+  const avatar_url = formData.get("avatar_url") as string;
 
   const { error } = await sb()
     .from("users")
     .update({
+      display_name: display_name || null,
+      avatar_url: avatar_url || null,
       bio: bio?.slice(0, 500) ?? "",
       youtube_url: youtube_url || null,
     })

@@ -1,11 +1,12 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState, useTransition, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { getRank, getRankProgress, getNextRank } from "@/lib/rank";
-import { UserPlus, UserMinus, Pencil } from "lucide-react";
-import { useState, useTransition } from "react";
+import { UserPlus, UserMinus, Pencil, Camera, Loader2 } from "lucide-react";
 import { followUser, unfollowUser } from "@/app/profile/actions";
 import { toast } from "sonner";
+import { createBrowserSupabase } from "@/lib/supabase";
 
 type ProfileHeaderProps = {
   profile: {
@@ -38,6 +39,41 @@ export default function ProfileHeader({
   const [following, setFollowing] = useState(initialFollowing);
   const [followerCount, setFollowerCount] = useState(profile.followerCount);
   const [isPending, startTransition] = useTransition();
+  const [isEditing, setIsEditing] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [previewAvatar, setPreviewAvatar] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingAvatar(true);
+    const supabase = createBrowserSupabase();
+    
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${profile.id}-${Math.random()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      const { data, error } = await supabase.storage
+        .from('matrix-files')
+        .upload(filePath, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('matrix-files')
+        .getPublicUrl(filePath);
+
+      setPreviewAvatar(publicUrl);
+      toast.success("Signal updated.");
+    } catch (err: any) {
+      toast.error("Upload failed: " + err.message);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handleFollow = () => {
     startTransition(async () => {
@@ -55,9 +91,114 @@ export default function ProfileHeader({
     });
   };
 
+  const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    
+    startTransition(async () => {
+      try {
+        const { updateProfile } = await import("@/app/profile/actions");
+        await updateProfile(formData);
+        toast.success("Profile updated!");
+        setIsEditing(false);
+        // Soft refresh
+        window.location.reload();
+      } catch (err) {
+        toast.error("Failed to update profile");
+      }
+    });
+  };
+
   return (
     <div className="relative">
-      {/* Banner */}
+      {/* ... previous content ... */}
+      <AnimatePresence>
+        {isEditing && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }}
+              onClick={() => setIsEditing(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-md rounded-3xl border border-white/10 bg-surface p-8 shadow-2xl"
+            >
+              <h3 className="mb-6 text-xl font-black tracking-tight text-white uppercase italic">Neural Link Setup</h3>
+              
+              {/* Avatar Upload Preview */}
+              <div className="flex flex-col items-center mb-8 gap-3">
+                <div className="relative group cursor-pointer" onClick={() => avatarInputRef.current?.click()}>
+                  <div className="h-24 w-24 rounded-full border-2 border-dashed border-emerald-500/50 flex items-center justify-center overflow-hidden bg-emerald-500/5 transition-all group-hover:border-emerald-500">
+                    {uploadingAvatar ? (
+                      <Loader2 size={32} className="text-emerald-500 animate-spin" />
+                    ) : (previewAvatar || profile.avatar_url) ? (
+                      <img src={previewAvatar || profile.avatar_url!} className="h-full w-full object-cover" />
+                    ) : (
+                      <Camera size={24} className="text-emerald-500/40" />
+                    )}
+                  </div>
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-full transition-all">
+                    <span className="text-[9px] font-black text-white tracking-widest uppercase">UPGRADE</span>
+                  </div>
+                </div>
+                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Select Signal Pattern</p>
+                <input 
+                  type="file" 
+                  ref={avatarInputRef} 
+                  className="hidden" 
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                />
+              </div>
+
+              <form onSubmit={handleUpdate} className="space-y-4">
+                <input type="hidden" name="avatar_url" value={previewAvatar || profile.avatar_url || ""} />
+                <div>
+                  <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-emerald-500/60">Matrix Alias</label>
+                  <input
+                    name="display_name"
+                    defaultValue={profile.display_name}
+                    placeholder="Enter your new Alias..."
+                    className="w-full rounded-xl border border-white/5 bg-white/5 px-4 py-3 text-sm text-white focus:border-emerald-500/50 focus:outline-none transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-emerald-500/60">Bio Header</label>
+                  <textarea
+                    name="bio"
+                    defaultValue={profile.bio}
+                    rows={3}
+                    placeholder="Describe your signal..."
+                    className="w-full rounded-xl border border-white/5 bg-white/5 px-4 py-3 text-sm text-white focus:border-emerald-500/50 focus:outline-none transition-all resize-none"
+                  />
+                </div>
+                <div className="flex justify-end gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(false)}
+                    className="px-6 py-2.5 text-xs font-bold text-zinc-500 hover:text-white transition-colors"
+                  >
+                    ABORT
+                  </button>
+                  <button
+                    disabled={isPending || uploadingAvatar}
+                    type="submit"
+                    className="rounded-xl bg-emerald-600 px-6 py-2.5 text-xs font-black tracking-widest text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-500 transition-all uppercase"
+                  >
+                    SYNC CHANGES
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <div className="h-44 w-full overflow-hidden rounded-t-2xl bg-gradient-to-br from-neon-blue/20 via-neon-purple/10 to-transparent">
         {profile.banner_url && (
           <img
@@ -86,13 +227,11 @@ export default function ProfileHeader({
             )}
           </div>
           {/* Online Dot */}
-          {profile.is_online && (
-            <motion.div
-              className="absolute bottom-1 right-1 h-5 w-5 rounded-full border-3 border-background bg-green-500"
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ repeat: Infinity, duration: 2 }}
-            />
-          )}
+          <motion.div
+            className={`absolute bottom-1 right-1 h-5 w-5 rounded-full border-3 border-background ${profile.is_online ? 'bg-emerald-500' : 'bg-red-500 opacity-50'}`}
+            animate={profile.is_online ? { scale: [1, 1.2, 1] } : {}}
+            transition={{ repeat: Infinity, duration: 2 }}
+          />
         </div>
 
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -167,7 +306,10 @@ export default function ProfileHeader({
           {/* Actions */}
           <div className="flex gap-2">
             {isOwner ? (
-              <button className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-zinc-300 transition-colors hover:bg-white/10 cursor-pointer">
+              <button 
+                onClick={() => setIsEditing(true)}
+                className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-zinc-300 transition-colors hover:bg-white/10 cursor-pointer"
+              >
                 <Pencil className="h-3.5 w-3.5" />
                 Edit Profile
               </button>

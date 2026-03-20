@@ -1,8 +1,9 @@
 "use client";
 
+import React from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Home,
   FolderLock,
@@ -25,10 +26,15 @@ export default function Sidebar() {
   return (
     <aside className="fixed top-0 left-0 z-50 flex h-screen w-[68px] flex-col items-center justify-between border-r border-zinc-800/70 bg-black/60 backdrop-blur-xl py-5">
       {/* Logo */}
-      <Link href="/">
+      <Link href="/" className="relative">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-neon-blue to-neon-purple text-sm font-black text-white shadow-lg shadow-neon-blue/25">
           EH
         </div>
+        <motion.div
+          className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]"
+          animate={{ opacity: [1, 0.5, 1] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
       </Link>
 
       {/* Nav Icons */}

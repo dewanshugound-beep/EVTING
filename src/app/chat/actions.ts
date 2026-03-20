@@ -99,7 +99,6 @@ export async function addReaction(messageId: string, emoji: string) {
   if (error) throw error;
   return { success: true };
 }
-
 /* ─── Remove Reaction ─── */
 export async function removeReaction(messageId: string, emoji: string) {
   const user = await requireAuth();
@@ -131,3 +130,18 @@ export async function getReactions(messageId: string) {
     .eq("message_id", messageId);
   return data ?? [];
 }
+
+/* ─── Delete Message ─── */
+export async function deleteMessage(messageId: string) {
+  const user = await requireAuth();
+  
+  const { error } = await sb()
+    .from("messages")
+    .delete()
+    .eq("id", messageId)
+    .eq("user_id", user.id);
+
+  if (error) throw error;
+  return { success: true };
+}
+

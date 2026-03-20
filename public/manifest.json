@@ -1,0 +1,21 @@
+{
+  "name": "MatrixIN Portal",
+  "short_name": "MatrixIN",
+  "description": "Enter the Digital Frontier. Unauthorized archives and encrypted signals.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "/matrix_icon_192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/matrix_icon_512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

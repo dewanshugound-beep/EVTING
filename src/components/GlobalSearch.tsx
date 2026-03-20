@@ -50,7 +50,7 @@ export default function GlobalSearch() {
       } finally {
         setLoading(false);
       }
-    }, 250);
+    }, 500); // 500ms Database Throttling
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

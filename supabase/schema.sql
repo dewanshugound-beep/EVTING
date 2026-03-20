@@ -1,9 +1,49 @@
--- =====================================================
--- EVTING HUB — Full Database Schema
--- Run this in Supabase SQL Editor
--- =====================================================
-
 -- ─── USERS (synced from Clerk via webhook) ───
+alter table public.users add column if not exists message_count int default 0;
+
+-- ─── SITE STATS (Analytics) ───
+create table if not exists public.site_stats (
+  id int primary key default 1,
+  visitor_count int default 0,
+  updated_at timestamptz default now(),
+  check (id = 1) -- Ensure only one row exists
+);
+
+-- Seed site stats
+insert into public.site_stats (id, visitor_count) values (1, 0) on conflict (id) do nothing;
+
+-- Function to increment message count
+create or replace function public.handle_new_message()
+returns trigger as $$
+begin
+  update public.users
+  set message_count = message_count + 1
+  where id = new.user_id;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- Trigger for new messages
+create trigger on_message_created
+  after insert on public.messages
+  for each row execute function public.handle_new_message();
+
+-- RPC for Visitor Counter
+create or replace function public.increment_visitor_count()
+returns void as $$
+begin
+  update public.site_stats
+  set visitor_count = visitor_count + 1,
+      updated_at = now()
+  where id = 1;
+end;
+$$ language plpgsql security definer;
+
+-- RLS for Site Stats
+alter table public.site_stats enable row level security;
+create policy "Admins can view site stats" on public.site_stats for select using (
+  exists (select 1 from public.users where id = auth.uid()::text and role = 'admin')
+);
 create table if not exists public.users (
   id text primary key,
   email text unique,
@@ -17,6 +57,7 @@ create table if not exists public.users (
   xp int default 0,
   rank text default 'Novice',
   is_online boolean default false,
+  is_banned boolean default false,
   last_seen timestamptz default now(),
   created_at timestamptz default now()
 );
@@ -89,6 +130,8 @@ create table if not exists public.messages (
   channel_id uuid references public.channels(id) on delete cascade,
   user_id text references public.users(id) on delete cascade,
   body text not null,
+  is_broadcast boolean default false,
+  sender_name text,
   created_at timestamptz default now()
 );
 
@@ -108,6 +151,29 @@ create table if not exists public.project_views (
   project_id uuid references public.projects(id) on delete cascade,
   viewer_id text,
   viewed_at timestamptz default now()
+);
+
+-- Projects Table (Matrix Vault)
+create table public.projects_vault (
+  id uuid default gen_random_uuid() primary key,
+  user_id text references public.users(id) on delete cascade not null,
+  title text not null,
+  description text,
+  file_url text not null,
+  category text check (category in ('Hacking', 'APK', 'Script', 'Tool')) default 'Tool',
+  downloads int default 0,
+  created_at timestamptz default now()
+);
+
+-- Reports Table (Oracle's Eye)
+create table public.reports (
+  id uuid default gen_random_uuid() primary key,
+  reporter_id text references public.users(id) on delete cascade not null,
+  content_id uuid not null, -- Can be a message_id or project_id
+  content_type text check (content_type in ('message', 'project')) not null,
+  reason text,
+  status text check (status in ('pending', 'dismissed', 'resolved')) default 'pending',
+  created_at timestamptz default now()
 );
 
 -- ─── INDEXES ───
@@ -201,6 +267,22 @@ alter table public.follows enable row level security;
 alter table public.channels enable row level security;
 alter table public.channel_members enable row level security;
 alter table public.messages enable row level security;
+alter table public.projects_vault enable row level security;
+alter table public.reports enable row level security;
+
+-- Users: Anyone can read, only users can update their own profile
+-- ... (existing users policies)
+
+-- Projects Vault: Public Select, Authenticated Insert/Delete own
+create policy "Vault projects are viewable by everyone" on public.projects_vault for select using (true);
+create policy "Users can insert into vault" on public.projects_vault for insert with check (auth.uid()::text = user_id);
+create policy "Users can delete from vault" on public.projects_vault for delete using (auth.uid()::text = user_id);
+
+-- Reports: Authenticated Insert, Admin Select
+create policy "Users can submit reports" on public.reports for insert with check (auth.uid()::text = reporter_id);
+create policy "Admins can manage reports" on public.reports for all using (
+  exists (select 1 from public.users where id = auth.uid()::text and role = 'admin')
+);
 
 -- Users: Anyone can read, only users can update their own profile
 create policy "Public profiles are viewable by everyone" on public.users for select using (true);

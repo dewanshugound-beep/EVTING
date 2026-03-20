@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 import Sidebar from "@/components/Sidebar";
 import Navbar from "@/components/Navbar";
 import PageTransition from "@/components/PageTransition";
+import BroadcastListener from "@/components/BroadcastListener";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,9 +19,34 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+import VisitorTracker from "@/components/VisitorTracker";
+
 export const metadata: Metadata = {
-  title: "MatrixIN",
-  description: "Enter the Matrix. Your ultimate full-stack hub.",
+  title: "MatrixIN — Enter the Digital Frontier",
+  description: "Unauthorized archives, encrypted signals, and the ultimate developer hub within the Matrix.",
+  manifest: "/manifest.json",
+  themeColor: "#10b981",
+  openGraph: {
+    title: "MatrixIN",
+    description: "Enter the Digital Frontier",
+    url: "https://evting.vercel.app",
+    siteName: "MatrixIN",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MatrixIN",
+    description: "Enter the Digital Frontier",
+    images: ["/og-image.png"],
+  },
   verification: {
     google: "cu3EgStZQOg_jHkeKlVonNIHAm96mxAJESf6AdYbhXg",
   },
@@ -48,6 +74,8 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
       >
         <body className="min-h-full bg-background text-foreground">
+          <VisitorTracker />
+          <BroadcastListener />
           <Sidebar />
           <Navbar />
           <main className="ml-[68px] pt-14">
