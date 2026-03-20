@@ -21,6 +21,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "MatrixIN",
   description: "Enter the Matrix. Your ultimate full-stack hub.",
+  verification: {
+    google: "cu3EgStZQOg_jHkeKlVonNIHAm96mxAJESf6AdYbhXg",
+  },
 };
 
 export default function RootLayout({
