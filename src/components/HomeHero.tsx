@@ -91,7 +91,7 @@ export default function HomeHero() {
           transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
           className="max-w-3xl text-6xl sm:text-7xl md:text-8xl font-black tracking-tighter leading-none mb-8"
         >
-          <span className="text-blue-500">EVTING:</span>{" "}
+          <span className="text-blue-500">MatrixIN:</span>{" "}
           <span className="bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent">
             THE DEV HUB.
           </span>

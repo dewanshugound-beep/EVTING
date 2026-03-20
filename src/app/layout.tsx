@@ -19,8 +19,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MatrixIN | Your Ultimate Hub",
-  description: "Enter the Matrix. Chat, build, and explore with MatrixIN.",
+  title: "MatrixIN",
+  description: "Enter the Matrix. Your ultimate full-stack hub.",
   verification: {
     google: "cu3EgStZQOg_jHkeKlVonNIHAm96mxAJESf6AdYbhXg",
   },

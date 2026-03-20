@@ -12,8 +12,8 @@ export default function Navbar() {
     <header className="fixed top-0 left-[68px] right-0 z-40 flex h-14 items-center justify-between px-5 bg-black/40 backdrop-blur-xl border-b border-zinc-800/70">
       {/* Left — Brand */}
       <div className="flex items-center gap-3">
-        <span className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">
-          EVTING HUB
+        <span className="text-sm font-black uppercase tracking-[0.2em] text-zinc-100">
+          MatrixIN
         </span>
         <span className="h-4 w-px bg-zinc-800" />
         <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full border border-blue-500/20 bg-blue-500/8 text-blue-400 text-[10px] font-black tracking-widest">
