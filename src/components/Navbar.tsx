@@ -26,7 +26,7 @@ export default function Navbar() {
           .select("role")
           .eq("id", user.id)
           .single();
-        if (data) setRole(data.role);
+        if (data) setRole((data as any).role);
       } else {
         setRole(null);
       }

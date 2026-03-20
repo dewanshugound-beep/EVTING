@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useTransition } from "react";
+import React, { useState, useEffect, useRef, useTransition, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Hash,
@@ -19,6 +19,8 @@ import { createBrowserSupabase } from "@/lib/supabase";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { useUser } from "@clerk/nextjs";
+import { Virtuoso } from "react-virtuoso";
+import Image from "next/image";
 
 type Message = {
   id: string;
@@ -49,11 +51,107 @@ const channelIcons: Record<string, any> = {
   squad: Swords,
 };
 
-const RankBadge = ({ role, messageCount }: { role?: string; messageCount?: number }) => {
+const RankBadge = React.memo(({ role, messageCount }: { role?: string; messageCount?: number }) => {
   if (role === 'admin') return <span className="px-1.5 py-0.5 rounded bg-red-500/10 border border-red-500/30 text-[8px] font-black text-red-500 tracking-widest shadow-[0_0_10px_rgba(239,68,68,0.2)] ml-2 uppercase animate-pulse">[OVERLORD]</span>;
   if ((messageCount || 0) > 50) return <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-[8px] font-black text-emerald-500 tracking-widest ml-2 uppercase">[HACKER]</span>;
   return <span className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-[8px] font-black text-zinc-500 tracking-widest ml-2 uppercase">[NODE]</span>;
-};
+});
+RankBadge.displayName = "RankBadge";
+
+const MessageItem = React.memo(({ 
+  msg, 
+  currentUserId, 
+  isImage, 
+  onReport, 
+  onDelete 
+}: { 
+  msg: Message; 
+  currentUserId: string | null; 
+  isImage: (url: string) => boolean; 
+  onReport: (id: string) => void;
+  onDelete: (id: string) => void;
+}) => {
+  const isOwn = msg.user_id === currentUserId;
+  const isBroadcast = msg.is_broadcast;
+  const isImageMsg = isImage(msg.body);
+
+  return (
+    <motion.div 
+      className={`flex gap-3 group px-5 mb-6 ${isOwn ? "flex-row-reverse" : ""} ${isBroadcast ? "justify-center w-full my-6 px-0" : ""}`}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      layout
+    >
+      {!isBroadcast && (
+        <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-white/5 relative bg-zinc-900">
+          {msg.users?.avatar_url ? (
+            <Image 
+              src={msg.users.avatar_url} 
+              alt={msg.users.display_name || "Agent"} 
+              fill 
+              sizes="36px"
+              className="object-cover" 
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center text-[10px] font-black text-zinc-600 uppercase">
+              {msg.users?.display_name?.[0]}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className={`${isBroadcast ? "w-full max-w-2xl px-6 py-4 rounded-2xl bg-emerald-500/5 border-2 border-emerald-500/40 shadow-[0_0_30px_rgba(16,185,129,0.1)] relative" : "max-w-[70%]"} ${isOwn && !isBroadcast ? "text-right" : ""}`}>
+        <div className={`flex items-center gap-2 mb-1 flex-wrap ${isOwn ? "flex-row-reverse" : ""}`}>
+          <span className={`text-[10px] font-black tracking-widest uppercase ${isBroadcast ? "text-emerald-400" : "text-zinc-400"}`}>
+            {isBroadcast ? "MATRIX SYSTEM" : (msg.users?.display_name ?? "AGENT")}
+          </span>
+          {!isBroadcast && <RankBadge role={msg.users?.role} messageCount={msg.users?.message_count} />}
+          <span className="text-[10px] text-zinc-700 font-mono">
+            {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
+          </span>
+          {!isBroadcast && (
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+              {!isOwn && (
+                <button 
+                  onClick={() => onReport(msg.id)} 
+                  className="p-1 text-zinc-700 hover:text-orange-500 cursor-pointer transition-colors"
+                >
+                  <Flag size={10} />
+                </button>
+              )}
+              {isOwn && (
+                <button 
+                  onClick={() => onDelete(msg.id)} 
+                  className="p-1 text-zinc-700 hover:text-red-500 cursor-pointer transition-colors"
+                >
+                  <Trash2 size={10} />
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className={`text-sm ${
+          isBroadcast ? "text-emerald-50 font-medium" : isOwn ? "inline-block rounded-2xl px-4 py-2 bg-neon-blue text-white rounded-tr-sm shadow-lg shadow-neon-blue/10" : "inline-block rounded-2xl px-4 py-2 bg-surface-light border border-border text-zinc-300 rounded-tl-sm"
+        } ${isImageMsg ? "!bg-transparent !p-0" : ""}`}>
+          {isImageMsg ? (
+            <div className="relative max-w-md w-full aspect-auto rounded-xl border-2 border-emerald-500/20 shadow-xl overflow-hidden group/img">
+              <img 
+                src={msg.body} 
+                className="w-full h-auto object-contain transition-transform group-hover/img:scale-[1.02]" 
+                alt="Archive Signal" 
+                loading="lazy"
+              />
+            </div>
+          ) : (
+            msg.body
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+});
+MessageItem.displayName = "MessageItem";
 
 export default function ChatClient({
   channels,
@@ -76,25 +174,28 @@ export default function ChatClient({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  
+  const virtuosoRef = useRef<any>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const playSound = (type: 'click' | 'typing') => {
+  const playSound = useCallback((type: 'click' | 'typing') => {
     const isMuted = localStorage.getItem("matrix_sound_muted") === "true";
     if (isMuted) return;
     const audio = new Audio(type === 'click' ? '/click.mp3' : '/typing.mp3');
     audio.play().catch(() => {});
-  };
+  }, []);
 
-  const isImage = (url: string) => {
+  const isImage = useCallback((url: string) => {
     return /\.(jpg|jpeg|png|webp|gif|svg)$/.test(url.toLowerCase());
-  };
+  }, []);
 
-  // Auto-scroll
+  // Auto-scroll logic handled by Virtuoso's initialTopMostItemIndex or followOutput
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+    if (messages.length > 0) {
+      virtuosoRef.current?.scrollToIndex({ index: messages.length - 1, behavior: 'smooth' });
+    }
+  }, [messages.length]);
 
   // Real-time subscription
   useEffect(() => {
@@ -148,7 +249,7 @@ export default function ChatClient({
       });
 
     return () => { supabase.removeChannel(channel); };
-  }, [activeChannel, currentUserId, user]);
+  }, [activeChannel, currentUserId, user, playSound]);
 
   const handleSend = (e?: React.FormEvent, bodyOverride?: string) => {
     e?.preventDefault();
@@ -180,7 +281,7 @@ export default function ChatClient({
     } catch (err) { toast.error("Failed to load history."); } finally { setLoadingMore(false); }
   };
 
-  const handleDelete = async (msgId: string) => {
+  const handleDelete = useCallback(async (msgId: string) => {
     try {
       const result = await deleteMessage(msgId);
       if (result.success) {
@@ -188,14 +289,14 @@ export default function ChatClient({
         toast.success("Message terminated.");
       }
     } catch (err) { toast.error("Failed to delete message."); }
-  };
+  }, []);
 
-  const handleReport = async (msgId: string) => {
+  const handleReport = useCallback(async (msgId: string) => {
     try {
       await reportVaultContent(msgId, "message", "User Flag");
       toast.success("Signal sent to the Oracle.");
     } catch (err) { toast.error("Failed to alert the Oracle."); }
-  };
+  }, []);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -261,59 +362,51 @@ export default function ChatClient({
         </div>
       </aside>
 
-      <div className="flex flex-1 flex-col bg-black/40">
-        <div className="flex items-center gap-2 border-b border-border px-5 py-3 bg-surface/50">
+      <div className="flex flex-1 flex-col bg-black/40 relative">
+        <div className="flex items-center gap-2 border-b border-border px-5 py-3 bg-surface/50 z-10">
           <Hash className="h-4 w-4 text-neon-blue" />
           <span className="text-sm font-black text-white uppercase tracking-widest">
             {channels.find((c) => c.id === activeChannel)?.name ?? "Chat"}
           </span>
         </div>
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-6">
-          {hasMore && (
-            <button onClick={handleLoadMore} className="w-full py-4 text-[10px] font-black tracking-[0.3em] text-zinc-600 hover:text-emerald-500 transition-all uppercase flex items-center justify-center gap-2 border-b border-white/5">
-              {loadingMore ? <Loader2 size={12} className="animate-spin" /> : <Zap size={10} />} MATRIX REWIND
-            </button>
-          )}
-
-          <AnimatePresence initial={false}>
-            {messages.map((msg) => {
-              const isOwn = msg.user_id === currentUserId;
-              const isBroadcast = msg.is_broadcast;
-              const isImageMsg = isImage(msg.body);
-              return (
-                <motion.div key={msg.id} className={`flex gap-3 group ${isOwn ? "flex-row-reverse" : ""} ${isBroadcast ? "justify-center w-full my-6" : ""}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} layout>
-                  {!isBroadcast && (
-                    <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-white/5">
-                      {msg.users?.avatar_url ? <img src={msg.users.avatar_url} alt="" className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center bg-zinc-900 text-[10px] font-black text-zinc-600">{msg.users?.display_name?.[0]?.toUpperCase()}</div>}
-                    </div>
+        <div className="flex-1 min-h-0">
+          <Virtuoso
+            ref={virtuosoRef}
+            data={messages}
+            initialTopMostItemIndex={messages.length - 1}
+            followOutput="smooth"
+            components={{
+              Header: () => (
+                <div className="pt-5">
+                  {hasMore && (
+                    <button 
+                      onClick={handleLoadMore} 
+                      className="w-full py-4 text-[10px] font-black tracking-[0.3em] text-zinc-600 hover:text-emerald-400 transition-all uppercase flex items-center justify-center gap-2 border-b border-white/5"
+                    >
+                      {loadingMore ? <Loader2 size={12} className="animate-spin" /> : <Zap size={10} />} MATRIX REWIND
+                    </button>
                   )}
-                  <div className={`${isBroadcast ? "w-full max-w-2xl px-6 py-4 rounded-2xl bg-emerald-500/5 border-2 border-emerald-500/40 shadow-[0_0_30px_rgba(16,185,129,0.1)] relative" : "max-w-[70%]"} ${isOwn && !isBroadcast ? "text-right" : ""}`}>
-                    <div className={`flex items-center gap-2 mb-1 flex-wrap ${isOwn ? "flex-row-reverse" : ""}`}>
-                      <span className={`text-[10px] font-black tracking-widest uppercase ${isBroadcast ? "text-emerald-400" : "text-zinc-400"}`}>
-                        {isBroadcast ? "MATRIX SYSTEM" : (msg.users?.display_name ?? "AGENT")}
-                      </span>
-                      {!isBroadcast && <RankBadge role={msg.users?.role} messageCount={msg.users?.message_count} />}
-                      <span className="text-[10px] text-zinc-700 font-mono">{formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}</span>
-                      {!isBroadcast && (
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                          {!isOwn && <button onClick={() => handleReport(msg.id)} className="p-1 text-zinc-700 hover:text-orange-500 cursor-pointer"><Flag size={10} /></button>}
-                          {isOwn && <button onClick={() => handleDelete(msg.id)} className="p-1 text-zinc-700 hover:text-red-500 cursor-pointer"><Trash2 size={10} /></button>}
-                        </div>
-                      )}
-                    </div>
-                    <div className={`text-sm ${isBroadcast ? "text-emerald-50 font-medium" : isOwn ? "inline-block rounded-2xl px-4 py-2 bg-neon-blue text-white rounded-tr-sm" : "inline-block rounded-2xl px-4 py-2 bg-surface-light border border-border text-zinc-300 rounded-tl-sm"} ${isImageMsg ? "!bg-transparent !p-0" : ""}`}>
-                      {isImageMsg ? <img src={msg.body} className="max-w-md w-full rounded-xl border-2 border-emerald-500/20 shadow-lg" alt="" /> : msg.body}
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
+                </div>
+              ),
+              Footer: () => <div className="pb-5" />
+            }}
+            itemContent={(_, msg) => (
+              <MessageItem 
+                key={msg.id} 
+                msg={msg} 
+                currentUserId={currentUserId} 
+                isImage={isImage} 
+                onReport={handleReport} 
+                onDelete={handleDelete} 
+              />
+            )}
+            style={{ height: '100%', scrollbarWidth: 'none' }}
+          />
         </div>
 
         {uploading && (
-           <div className="px-5 py-2">
+           <div className="px-5 py-2 bg-black/20 backdrop-blur-md absolute bottom-20 left-0 right-0 z-20">
              <div className="text-[10px] font-black text-emerald-500 tracking-widest uppercase mb-1 animate-pulse">Uploading to the Matrix... {uploadProgress}%</div>
              <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden">
                <div className="h-full bg-emerald-500 transition-all" style={{ width: `${uploadProgress}%` }} />
@@ -321,13 +414,15 @@ export default function ChatClient({
            </div>
         )}
 
-        {typingUsers.length > 0 && (
-          <div className="px-5 py-1">
-            <p className="text-[9px] text-emerald-500 font-black tracking-widest uppercase animate-pulse">{typingUsers.join(", ")} {typingUsers.length === 1 ? 'is hacking...' : 'are hacking...'}</p>
-          </div>
-        )}
+        <div className="px-5 py-1 z-10">
+          {typingUsers.length > 0 ? (
+            <p className="text-[9px] text-emerald-500 font-black tracking-widest uppercase animate-pulse">
+              {typingUsers.join(", ")} {typingUsers.length === 1 ? 'is hacking...' : 'are hacking...'}
+            </p>
+          ) : <div className="h-3" />}
+        </div>
 
-        <div className="border-t border-border p-4 bg-surface/30">
+        <div className="border-t border-border p-4 bg-surface/30 z-10">
           <form onSubmit={handleSend} className="flex gap-2 items-center">
             <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept="image/*" />
             <button type="button" onClick={() => fileInputRef.current?.click()} className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-900 border border-white/5 text-zinc-500 hover:text-white transition-all cursor-pointer"><Plus size={18} /></button>

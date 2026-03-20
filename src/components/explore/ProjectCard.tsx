@@ -4,16 +4,15 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Download, 
-  Eye, 
   Flag, 
   FileCode, 
   Terminal, 
-  ShieldAlert,
   HardDrive
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { reportVaultContent } from "@/app/explore/actions";
+import Image from "next/image";
 
 interface VaultProject {
   id: string;
@@ -29,7 +28,7 @@ interface VaultProject {
   };
 }
 
-export default function ProjectCard({ project }: { project: VaultProject }) {
+const ProjectCard = React.memo(({ project }: { project: VaultProject }) => {
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [codeContent, setCodeContent] = useState<string | null>(null);
   const [loadingCode, setLoadingCode] = useState(false);
@@ -71,7 +70,7 @@ export default function ProjectCard({ project }: { project: VaultProject }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       layout
-      className="group relative overflow-hidden rounded-2xl border border-white/5 bg-surface p-5 hover:border-emerald-500/40 transition-all shadow-xl"
+      className="group relative overflow-hidden rounded-2xl border border-white/5 bg-surface p-5 hover:border-emerald-500/40 transition-all shadow-xl flex flex-col h-full"
     >
       <div className="flex justify-between items-start mb-4">
         <div className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${categoryColors[project.category]}`}>
@@ -91,14 +90,20 @@ export default function ProjectCard({ project }: { project: VaultProject }) {
       </p>
 
       <div className="flex items-center gap-2 mb-6">
-        <div className="h-6 w-6 rounded-full bg-zinc-900 border border-white/5 overflow-hidden">
+        <div className="h-6 w-6 rounded-full bg-zinc-900 border border-white/5 overflow-hidden relative">
           {project.users?.avatar_url ? (
-            <img src={project.users.avatar_url} className="h-full w-full object-cover" />
+            <Image 
+              src={project.users.avatar_url} 
+              alt={project.users.username || "Avatar"} 
+              fill 
+              sizes="24px"
+              className="object-cover" 
+            />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-[10px] font-bold text-zinc-700">?</div>
+            <div className="flex h-full w-full items-center justify-center text-[10px] font-bold text-zinc-700 font-mono">?</div>
           )}
         </div>
-        <div className="text-[10px] font-bold text-zinc-500">
+        <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-tighter">
           BY <span className="text-zinc-300">@{project.users?.username || "unknown"}</span> • {formatDistanceToNow(new Date(project.created_at), { addSuffix: true })}
         </div>
       </div>
@@ -125,7 +130,6 @@ export default function ProjectCard({ project }: { project: VaultProject }) {
         </a>
       </div>
 
-      {/* Script Preview Modal */}
       <AnimatePresence>
         {isPreviewing && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10">
@@ -142,15 +146,15 @@ export default function ProjectCard({ project }: { project: VaultProject }) {
               exit={{ scale: 0.9, opacity: 0, y: 50 }}
               className="relative w-full max-w-5xl h-[80vh] rounded-3xl border border-emerald-500/30 bg-black flex flex-col shadow-[0_0_100px_rgba(16,185,129,0.1)]"
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-zinc-950/50 rounded-t-3xl">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-zinc-950/50 rounded-t-3xl text-xs">
                 <div className="flex items-center gap-3">
                   <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/40" />
-                    <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/40" />
-                    <div className="w-3 h-3 rounded-full bg-emerald-500/20 border border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.2)]" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/40" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/20 border border-yellow-500/40" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/20 border border-emerald-500/40" />
                   </div>
                   <div className="h-4 w-px bg-white/10 mx-2" />
-                  <span className="text-xs font-mono font-black text-emerald-500 tracking-widest flex items-center gap-2 uppercase">
+                  <span className="font-mono font-black text-emerald-500 tracking-widest flex items-center gap-2 uppercase">
                     <FileCode size={14} /> {project.title.replace(/\s+/g, '-').toLowerCase()}.script
                   </span>
                 </div>
@@ -162,15 +166,15 @@ export default function ProjectCard({ project }: { project: VaultProject }) {
                 </button>
               </div>
 
-              <div className="flex-1 overflow-auto p-6 font-mono text-zinc-400 bg-zinc-950/20 selection:bg-emerald-500/20">
+              <div className="flex-1 overflow-auto p-6 font-mono text-zinc-400 bg-zinc-950/20">
                 {loadingCode ? (
                   <div className="flex h-full items-center justify-center flex-col gap-4">
-                    <div className="w-12 h-12 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin" />
-                    <p className="text-[10px] font-black text-emerald-500 animate-pulse tracking-widest uppercase">Deciphering signal stream...</p>
+                    <div className="w-8 h-8 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin" />
+                    <p className="text-[10px] font-black text-emerald-500 animate-pulse tracking-widest uppercase">Deciphering stream...</p>
                   </div>
                 ) : (
-                  <pre className="text-sm leading-relaxed scrollbar-hide">
-                    <code className="block">
+                  <pre className="text-sm leading-relaxed whitespace-pre-wrap">
+                    <code>
                       {codeContent || "// Error: Encrypted signal could not be deciphered."}
                     </code>
                   </pre>
@@ -178,8 +182,8 @@ export default function ProjectCard({ project }: { project: VaultProject }) {
               </div>
 
               <div className="px-6 py-3 border-t border-white/5 bg-zinc-950/50 rounded-b-3xl">
-                <p className="text-[9px] font-black text-zinc-600 tracking-[0.2em] uppercase">
-                  Matrix Preview System v2.0 • Script Analysis Active
+                <p className="text-[9px] font-black text-zinc-600 tracking-[0.2em] uppercase font-mono">
+                  Analysis Active • Matrix Preview v2
                 </p>
               </div>
             </motion.div>
@@ -188,4 +192,8 @@ export default function ProjectCard({ project }: { project: VaultProject }) {
       </AnimatePresence>
     </motion.div>
   );
-}
+});
+
+ProjectCard.displayName = "ProjectCard";
+
+export default ProjectCard;

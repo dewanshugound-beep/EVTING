@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ShieldCheck, 
   Search, 
-  Filter, 
   Dna, 
   Zap, 
   Terminal,
@@ -14,6 +13,7 @@ import {
 import ProjectCard from "@/components/explore/ProjectCard";
 import UploadProjectForm from "@/components/explore/UploadProjectForm";
 import { useDebounce } from "@/hooks/useDebounce";
+import { VirtuosoGrid } from "react-virtuoso";
 
 interface VaultProject {
   id: string;
@@ -36,12 +36,14 @@ export default function ExploreClient({ initialProjects }: { initialProjects: Va
 
   const categories = ["ALL", "HACKING", "APK", "SCRIPT", "TOOL"];
 
-  const filteredProjects = initialProjects.filter(p => {
-    const matchesSearch = p.title.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
-                         p.description.toLowerCase().includes(debouncedSearch.toLowerCase());
-    const matchesCategory = activeCategory === "ALL" || p.category.toUpperCase() === activeCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filteredProjects = useMemo(() => {
+    return initialProjects.filter(p => {
+      const matchesSearch = p.title.toLowerCase().includes(debouncedSearch.toLowerCase()) || 
+                           p.description.toLowerCase().includes(debouncedSearch.toLowerCase());
+      const matchesCategory = activeCategory === "ALL" || p.category.toUpperCase() === activeCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [initialProjects, debouncedSearch, activeCategory]);
 
   return (
     <div className="min-h-screen bg-black/95 text-zinc-300">
@@ -65,9 +67,9 @@ export default function ExploreClient({ initialProjects }: { initialProjects: Va
                 </div>
                 <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter uppercase italic">Matrix Vault</h1>
               </div>
-              <p className="max-w-xl text-lg text-zinc-500 font-medium leading-relaxed">
+              <p className="max-w-xl text-lg text-zinc-500 font-medium leading-relaxed font-mono text-[11px] uppercase tracking-widest opacity-80">
                 Archives from the deepest sectors. Encrypted tools, unauthorized scripts, and leaked binary files. 
-                <span className="text-emerald-500/80"> Access granted to authorized hackers.</span>
+                <span className="text-emerald-500"> Access granted to authorized hackers.</span>
               </p>
             </div>
             <UploadProjectForm />
@@ -75,11 +77,9 @@ export default function ExploreClient({ initialProjects }: { initialProjects: Va
         </div>
       </div>
 
-      {/* Main Grid */}
-      <main className="mx-auto max-max-w-7xl px-6 py-12">
-        {/* Controls */}
+      <main className="mx-auto max-w-7xl px-6 py-12">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-          <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
             {categories.map((cat) => (
               <button
                 key={cat}
@@ -104,46 +104,43 @@ export default function ExploreClient({ initialProjects }: { initialProjects: Va
               placeholder="Search the archive..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-zinc-950/50 border border-white/5 rounded-2xl py-3 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all placeholder:text-zinc-700"
+              className="w-full bg-zinc-950/50 border border-white/5 rounded-2xl py-3 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all placeholder:text-zinc-700 font-mono tracking-tighter"
             />
           </div>
         </div>
 
-        {/* Project Grid */}
-        <AnimatePresence mode="popLayout">
-          {filteredProjects.length > 0 ? (
-            <motion.div 
-              layout
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-            >
-              {filteredProjects.map((p) => (
-                <ProjectCard key={p.id} project={p as any} />
-              ))}
-            </motion.div>
-          ) : (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex flex-col items-center justify-center py-40 border border-dashed border-white/5 rounded-3xl bg-zinc-950/20"
-            >
-              <div className="p-6 rounded-full bg-zinc-950 border border-white/5 mb-6 text-zinc-800">
-                <Dna size={48} className="animate-pulse" />
-              </div>
-              <p className="text-xl font-black text-zinc-700 uppercase tracking-widest">No signal detected in this sector.</p>
-              <p className="text-xs text-zinc-800 mt-2 italic capitalize">Refining search patterns might reveal hidden archives.</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {filteredProjects.length > 0 ? (
+          <div className="h-[800px]">
+            <VirtuosoGrid
+              data={filteredProjects}
+              totalCount={filteredProjects.length}
+              listClassName="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+              itemContent={(_, project) => (
+                <div className="pb-6">
+                  <ProjectCard project={project} />
+                </div>
+              )}
+              style={{ height: '100%', scrollbarWidth: 'none' }}
+            />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-40 border border-dashed border-white/5 rounded-3xl bg-zinc-950/20 animate-pulse">
+            <div className="p-6 rounded-full bg-zinc-950 border border-white/5 mb-6 text-zinc-800">
+              <Dna size={48} />
+            </div>
+            <p className="text-xl font-black text-zinc-700 uppercase tracking-widest">No signal detected in this sector.</p>
+            <p className="text-xs text-zinc-800 mt-2 italic font-mono uppercase">Deciphering... Refining search patterns.</p>
+          </div>
+        )}
       </main>
 
-      {/* Footer Info */}
       <div className="border-t border-white/5 bg-zinc-950/50 py-10 px-6 text-center">
-        <div className="flex justify-center gap-8 mb-6 text-zinc-800">
-          <div className="flex items-center gap-2"><Zap size={14} /> HIGH SPEED</div>
-          <div className="flex items-center gap-2"><Terminal size={14} /> ENCRYPTED</div>
-          <div className="flex items-center gap-2"><Grid size={14} /> DISTRIBUTED</div>
+        <div className="flex justify-center gap-8 mb-6 text-zinc-800 font-black tracking-tighter text-[10px]">
+          <div className="flex items-center gap-2 uppercase tracking-widest"><Zap size={14} /> High Speed</div>
+          <div className="flex items-center gap-2 uppercase tracking-widest"><Terminal size={14} /> Encrypted</div>
+          <div className="flex items-center gap-2 uppercase tracking-widest"><Grid size={14} /> Distributed</div>
         </div>
-        <p className="text-[10px] font-black text-zinc-700 tracking-[0.4em] uppercase">Matrix Archive System • Security Clearance Level 4</p>
+        <p className="text-[9px] font-black text-zinc-700 tracking-[0.4em] uppercase font-mono">Matrix Archive System • Security Level 4</p>
       </div>
     </div>
   );

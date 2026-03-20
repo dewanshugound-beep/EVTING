@@ -1,14 +1,14 @@
 "use server";
 
 import { createServerSupabase } from "@/lib/supabase";
-import { requireAuth } from "@/lib/actions";
+import { requireAuth, getDbUser } from "@/lib/actions";
 import { revalidatePath } from "next/cache";
 
 const sb = () => createServerSupabase();
 
 export async function getReports() {
-  const user = await requireAuth();
-  if (user.role !== "admin") throw new Error("Unauthorized access.");
+  const user = await getDbUser();
+  if (!user || user.role !== "admin") throw new Error("Unauthorized access.");
 
   const { data } = await sb()
     .from("reports")
@@ -18,8 +18,8 @@ export async function getReports() {
 }
 
 export async function dismissReport(reportId: string) {
-  const user = await requireAuth();
-  if (user.role !== "admin") throw new Error("Unauthorized access.");
+  const user = await getDbUser();
+  if (!user || user.role !== "admin") throw new Error("Unauthorized access.");
 
   const { error } = await sb()
     .from("reports")
@@ -32,8 +32,8 @@ export async function dismissReport(reportId: string) {
 }
 
 export async function resolveReport(reportId: string, contentId: string, contentType: "message" | "project") {
-  const user = await requireAuth();
-  if (user.role !== "admin") throw new Error("Unauthorized access.");
+  const user = await getDbUser();
+  if (!user || user.role !== "admin") throw new Error("Unauthorized access.");
 
   const supabase = sb();
 
