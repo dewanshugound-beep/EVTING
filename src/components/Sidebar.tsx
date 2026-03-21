@@ -14,6 +14,7 @@ import {
   Upload,
   Shield,
   Settings,
+  LayoutDashboard,
 } from "lucide-react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
@@ -29,6 +30,7 @@ const mainLinks = [
 
 const secondaryLinks = [
   { href: "/upload", icon: Upload, label: "Upload" },
+  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/notifications", icon: Bell, label: "Alerts", hasNotif: true },
   { href: "/settings", icon: Settings, label: "Settings" },
 ];
