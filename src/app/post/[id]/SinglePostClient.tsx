@@ -38,7 +38,7 @@ function PostHeader({ post, isOwn, onDelete }: { post: any; isOwn: boolean; onDe
   const author = post.users;
   return (
     <div className="flex items-start gap-3 mb-4">
-      <Link href={`/profile/${author?.username}`} className="shrink-0">
+      <Link href={author?.username ? `/u/${author.username}` : `/profile/${post.user_id}`} className="shrink-0">
         <div className="h-12 w-12 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center text-base font-bold text-zinc-400 overflow-hidden relative">
           {author?.avatar_url ? <Image src={author.avatar_url} alt="" fill className="object-cover" /> : (author?.display_name?.[0] || "U")}
         </div>
@@ -46,7 +46,7 @@ function PostHeader({ post, isOwn, onDelete }: { post: any; isOwn: boolean; onDe
       <div className="flex-1">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Link href={`/profile/${author?.username}`} className="text-base font-bold text-white hover:underline">
+            <Link href={author?.username ? `/u/${author.username}` : `/profile/${post.user_id}`} className="text-base font-bold text-white hover:underline">
               {author?.display_name || "User"}
             </Link>
             {author?.role === "dev" && (
@@ -214,7 +214,7 @@ export default function SinglePostClient({
           return (
             <div key={reply.id} className="px-6 py-4">
               <div className="flex gap-3">
-                <Link href={`/profile/${replyAuthor?.username}`} className="shrink-0">
+                <Link href={replyAuthor?.username ? `/u/${replyAuthor.username}` : `/profile/${reply.user_id}`} className="shrink-0">
                   <div className="h-9 w-9 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center text-xs font-bold text-zinc-400 overflow-hidden relative">
                     {replyAuthor?.avatar_url ? <Image src={replyAuthor.avatar_url} alt="" fill className="object-cover" /> : (replyAuthor?.display_name?.[0] || "U")}
                   </div>

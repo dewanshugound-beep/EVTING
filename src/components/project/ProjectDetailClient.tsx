@@ -94,7 +94,7 @@ export default function ProjectDetailClient({
             {/* Creator */}
             {creator && (
               <Link
-                href={`/profile/${creator.id}`}
+                href={creator.username ? `/u/${creator.username}` : `/profile/${creator.id}`}
                 className="mt-3 inline-flex items-center gap-2 text-xs text-zinc-400 hover:text-white transition-colors"
               >
                 {creator.avatar_url && (

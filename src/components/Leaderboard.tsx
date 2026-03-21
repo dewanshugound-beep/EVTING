@@ -31,7 +31,7 @@ const Leaderboard = React.memo(({ users }: { users: User[] }) => {
           const medals = ["🥇", "🥈", "🥉"];
 
           return (
-            <Link key={user.id} href={`/profile/${user.id}`}>
+            <Link key={user.id} href={user.username ? `/u/${user.username}` : `/profile/${user.id}`}>
               <motion.div
                 className={`flex items-center gap-4 px-5 py-4 transition-all hover:bg-white/[0.02] cursor-pointer group ${
                   i < users.length - 1 ? "border-b border-white/5" : ""

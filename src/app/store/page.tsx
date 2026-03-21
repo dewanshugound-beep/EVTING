@@ -89,7 +89,7 @@ function StoreCard({ listing }: { listing: any }) {
         <StarRating rating={listing.avg_rating || 0} />
 
         <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/5">
-          <div className="flex items-center gap-1.5">
+          <Link href={author?.username ? `/u/${author.username}` : `/profile/${listing.user_id}`} className="flex items-center gap-1.5 hover:text-accent transition-colors">
             <div className="h-5 w-5 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold text-zinc-500 overflow-hidden relative">
               {author?.avatar_url ? (
                 <Image src={author.avatar_url} alt="" fill className="object-cover" />
@@ -97,8 +97,8 @@ function StoreCard({ listing }: { listing: any }) {
                 (author?.display_name || "U")[0].toUpperCase()
               )}
             </div>
-            <span className="text-[10px] text-zinc-500 font-medium">@{author?.username || "user"}</span>
-          </div>
+            <span className="text-[10px] font-medium">@{author?.username || "user"}</span>
+          </Link>
           <div className="flex items-center gap-3 text-[9px] text-zinc-600 font-mono">
             <span className="flex items-center gap-1"><Star size={9} className="text-amber-500" />{listing.star_count || 0}</span>
             <span className="flex items-center gap-1"><Download size={9} />{listing.download_count || 0}</span>

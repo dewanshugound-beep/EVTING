@@ -190,7 +190,7 @@ export default function StoreDetailClient({
               <p className="text-zinc-400 text-sm leading-relaxed max-w-xl">{listing.description}</p>
 
               {/* Author */}
-              <Link href={`/profile/${author?.username}`} className="flex items-center gap-3 group">
+              <Link href={author?.username ? `/u/${author.username}` : `/profile/${listing.user_id}`} className="flex items-center gap-3 group">
                 <div className="h-8 w-8 rounded-full bg-zinc-800 border border-white/10 flex items-center justify-center text-xs font-bold text-zinc-400 overflow-hidden relative">
                   {author?.avatar_url ? <Image src={author.avatar_url} alt="" fill className="object-cover" /> : (author?.display_name?.[0] || "U")}
                 </div>

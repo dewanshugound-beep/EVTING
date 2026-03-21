@@ -129,7 +129,7 @@ export default function GlobalSearch() {
                         {results.users.map((u: any) => (
                           <Link
                             key={u.id}
-                            href={`/profile/${u.id}`}
+                            href={u.username ? `/u/${u.username}` : `/profile/${u.id}`}
                             onClick={close}
                           >
                             <div className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-white/5 cursor-pointer">

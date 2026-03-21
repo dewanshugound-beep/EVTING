@@ -129,7 +129,7 @@ function PostCard({
     >
       <div className="flex gap-3">
         {/* Avatar */}
-        <Link href={`/profile/${author?.username || post.user_id}`} className="shrink-0">
+        <Link href={author?.username ? `/u/${author.username}` : `/profile/${post.user_id}`} className="shrink-0">
           <div className="h-10 w-10 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-800 border border-white/10 flex items-center justify-center text-sm font-bold text-zinc-400 overflow-hidden relative">
             {author?.avatar_url ? (
               <Image src={author.avatar_url} alt="" fill className="object-cover" />
@@ -142,7 +142,7 @@ function PostCard({
         <div className="flex-1 min-w-0">
           {/* Author line */}
           <div className="flex items-center gap-2 mb-1">
-            <Link href={`/profile/${author?.username || post.user_id}`} className="text-sm font-bold text-white hover:underline">
+            <Link href={author?.username ? `/u/${author.username}` : `/profile/${post.user_id}`} className="text-sm font-bold text-white hover:underline">
               {author?.display_name || "User"}
             </Link>
             {author?.role === "dev" && (

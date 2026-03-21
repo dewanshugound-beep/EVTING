@@ -94,7 +94,7 @@ export default function CommentSection({
               layout
             >
               {/* Avatar */}
-              <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-zinc-800">
+              <Link href={comment.users?.username ? `/u/${comment.users.username}` : `/profile/${comment.user_id}`} className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-zinc-800 hover:opacity-80 transition-opacity">
                 {comment.users?.avatar_url ? (
                   <img
                     src={comment.users.avatar_url}
@@ -106,19 +106,19 @@ export default function CommentSection({
                     {comment.users?.display_name?.[0] ?? "?"}
                   </div>
                 )}
-              </div>
+              </Link>
 
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-white">
-                    {comment.users?.display_name}
-                  </span>
-                  <span className="text-[10px] text-zinc-600">
-                    {formatDistanceToNow(new Date(comment.created_at), {
-                      addSuffix: true,
-                    })}
-                  </span>
-                </div>
+                  <Link href={comment.users?.username ? `/u/${comment.users.username}` : `/profile/${comment.user_id}`} className="flex items-center gap-2 group">
+                    <span className="text-sm font-semibold text-white group-hover:text-accent transition-colors">
+                      {comment.users?.display_name}
+                    </span>
+                    <span className="text-[10px] text-zinc-600">
+                      {formatDistanceToNow(new Date(comment.created_at), {
+                        addSuffix: true,
+                      })}
+                    </span>
+                  </Link>
                 <p className="mt-1 text-sm text-zinc-400">{comment.body}</p>
               </div>
 
