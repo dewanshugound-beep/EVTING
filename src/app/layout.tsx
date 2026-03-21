@@ -26,12 +26,12 @@ export const viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "MatrixIN — Enter the Digital Frontier",
-  description: "Unauthorized archives, encrypted signals, and the ultimate developer hub within the Matrix.",
+  title: "MatrixIN — Build. Share. Connect.",
+  description: "The all-in-one developer platform. Discover tools, share your work, and connect with your community. Store, Social Feed, and Real-time Chat.",
   manifest: "/manifest.json",
   openGraph: {
-    title: "MatrixIN",
-    description: "Enter the Digital Frontier",
+    title: "MatrixIN — The Developer Platform",
+    description: "Store, Social Feed, and Real-time Chat for developers, hackers, and creators.",
     url: "https://evting.vercel.app",
     siteName: "MatrixIN",
     images: [
@@ -46,8 +46,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "MatrixIN",
-    description: "Enter the Digital Frontier",
+    title: "MatrixIN — The Developer Platform",
+    description: "Store, Social Feed, and Real-time Chat for developers, hackers, and creators.",
     images: ["/og-image.png"],
   },
   verification: {

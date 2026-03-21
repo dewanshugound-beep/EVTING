@@ -1,42 +1,36 @@
-import { createServerSupabase } from "@/lib/supabase";
 import { redirect } from "next/navigation";
+import { currentUser } from "@clerk/nextjs/server";
+import { createServerSupabase } from "@/lib/supabase";
 import AdminClient from "./AdminClient";
-import { getReports } from "./actions";
 
 export default async function AdminPage() {
-  const supabase = createServerSupabase();
-  
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  const clerkUser = await currentUser();
+  if (!clerkUser) redirect("/login");
 
-  const { data: dbUser } = await supabase
+  const sb = createServerSupabase();
+
+  // Verify admin role in DB
+  const { data: dbUser } = await sb
     .from("users")
     .select("role")
-    .eq("id", user.id)
+    .eq("id", clerkUser.id)
     .single();
 
   if (!dbUser || dbUser.role !== "admin") {
     redirect("/");
   }
 
-  const { data: users } = await supabase
-    .from("users")
-    .select("id, email, display_name, username, role, avatar_url, is_banned, created_at, message_count")
-    .order("created_at", { ascending: false });
-
-  const { data: stats } = await supabase
-    .from("site_stats")
-    .select("visitor_count")
-    .eq("id", 1)
-    .single();
-
-  const reports = await getReports();
+  // Load initial data for client
+  const [{ data: users }, { data: reports }] = await Promise.all([
+    sb.from("users").select("*").order("created_at", { ascending: false }).limit(50),
+    sb.from("reports").select("*").eq("status", "pending").order("created_at", { ascending: false }),
+  ]);
 
   return (
-    <AdminClient 
-      initialUsers={users || []} 
-      initialReports={reports || []} 
-      visitorCount={stats?.visitor_count || 0}
+    <AdminClient
+      initialUsers={users || []}
+      initialReports={reports || []}
+      visitorCount={0}
     />
   );
 }

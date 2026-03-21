@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# logs and personal outputs
+*.txt
+tsc_*
+scripts/promote_admin.ts
+all_users.txt
+users_list.txt
