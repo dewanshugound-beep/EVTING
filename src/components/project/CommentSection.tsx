@@ -6,6 +6,7 @@ import { Send, Trash2 } from "lucide-react";
 import { addComment, deleteComment } from "@/app/project/actions";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import Link from "next/link";
 
 type Comment = {
   id: string;
