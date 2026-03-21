@@ -375,6 +375,55 @@ const HomeHero = React.memo(() => {
           </div>
         </BentoCard>
       </motion.section>
+      
+      {/* ═══════════════════════════════════ */}
+      {/* ABOUT ME SECTION */}
+      {/* ═══════════════════════════════════ */}
+      <motion.section
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.1, duration: 0.7 }}
+        className="max-w-5xl mx-auto px-6 pb-20"
+      >
+        <BentoCard className="flex flex-col items-center justify-center text-center p-10 bg-gradient-to-br from-black to-zinc-950 border border-white/5 relative overflow-hidden">
+          {/* Decorative background glow */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-accent/5 rounded-full blur-[100px] pointer-events-none" />
+          
+          <div className="relative z-10 space-y-4">
+            <h2 className="text-2xl font-black text-white tracking-widest uppercase mb-2">
+              <span className="text-accent">&lt;</span> About The Creator <span className="text-accent">/&gt;</span>
+            </h2>
+            
+            <p className="text-zinc-400 max-w-2xl mx-auto leading-relaxed text-sm md:text-base">
+              Hi, I'm <span className="text-white font-bold">Devanshu</span>. I'm a 14-year-old student at Chavara Vidya Peeth in class 9th. 
+              I built this platform with a passion for clean, state-of-the-art UI and modern development.
+            </p>
+            
+            <div className="flex flex-wrap items-center justify-center gap-4 mt-6 text-xs text-zinc-500 font-mono">
+              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+                <Code2 size={14} className="text-accent" /> Managed by Devanshu
+              </span>
+              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+                <Terminal size={14} className="text-neon-purple" /> Created by Devanshu
+              </span>
+              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+                <Shield size={14} className="text-neon-green" /> Owner is Devanshu
+              </span>
+            </div>
+            
+            <div className="mt-8">
+              <a 
+                href="https://www.instagram.com/its.devanshu_" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 text-white font-bold text-sm tracking-wide hover:scale-105 transition-transform shadow-lg shadow-pink-500/20"
+              >
+                Follow me on Instagram
+              </a>
+            </div>
+          </div>
+        </BentoCard>
+      </motion.section>
     </>
   );
 });
