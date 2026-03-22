@@ -1,6 +1,6 @@
 "use server";
 
-import { createServerSupabase } from "@/lib/supabase";
+import { createServerSupabase } from "@/lib/supabase-server";
 import { getDbUser } from "@/lib/actions";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/app/feed/actions";

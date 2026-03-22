@@ -1,6 +1,6 @@
 "use server";
 
-import { createServerSupabase } from "@/lib/supabase";
+import { createServerSupabase } from "@/lib/supabase-server";
 import { requireAuth } from "@/lib/actions";
 import { getRank, XP_REWARDS } from "@/lib/rank";
 

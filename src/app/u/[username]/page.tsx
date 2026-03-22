@@ -1,4 +1,4 @@
-import { createServerSupabase } from "@/lib/supabase";
+import { createServerSupabase } from "@/lib/supabase-server";
 import { notFound } from "next/navigation";
 import ProfileClient from "./ProfileClient";
 import { currentUser } from "@/lib/auth";

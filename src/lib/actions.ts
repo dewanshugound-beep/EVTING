@@ -1,5 +1,5 @@
 import { currentUser } from "@/lib/auth";
-import { createServerSupabase } from "./supabase";
+import { createServerSupabase } from "./supabase-server";
 
 /**
  * Get the currently authenticated Clerk user or throw.

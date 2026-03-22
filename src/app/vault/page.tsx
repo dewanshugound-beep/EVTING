@@ -1,5 +1,5 @@
 import { currentUser } from "@/lib/auth";
-import { createServerSupabase } from "@/lib/supabase";
+import { createServerSupabase } from "@/lib/supabase-server";
 import VaultClient from "@/components/VaultClient";
 
 export default async function VaultPage() {
