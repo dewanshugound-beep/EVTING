@@ -209,16 +209,18 @@ export default function ChatClient({
     channel
       .on("postgres_changes", {
         event: "INSERT", schema: "public", table: "messages", filter: `channel_id=eq.${activeChannel}`,
-      }, (payload) => {
+      }, async (payload) => {
         const newMsg = payload.new as any;
-        supabase.from("users").select("id, display_name, avatar_url, username, role, message_count").eq("id", newMsg.user_id).single()
-          .then(({ data }) => {
-            setMessages((prev) => {
-              if (prev.some((m) => m.id === newMsg.id)) return prev;
-              playSound('typing');
-              return [...prev, { ...newMsg, users: data }];
-            });
+        try {
+          const { data } = await supabase.from("users").select("id, display_name, avatar_url, username, role, message_count").eq("id", newMsg.user_id).single();
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === newMsg.id)) return prev;
+            playSound('typing');
+            return [...prev, { ...newMsg, users: data }];
           });
+        } catch (err) {
+          console.error("Failed to fetch message sender:", err);
+        }
       })
       .on("postgres_changes", {
         event: "DELETE", schema: "public", table: "messages", filter: `channel_id=eq.${activeChannel}`,

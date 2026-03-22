@@ -102,7 +102,7 @@ export async function addReaction(messageId: string, emoji: string) {
 /* ─── Remove Reaction ─── */
 export async function removeReaction(messageId: string, emoji: string) {
   const user = await requireAuth();
-  await sb()
+  await (await createServerSupabase())
     .from("message_reactions")
     .delete()
     .eq("message_id", messageId)
@@ -114,7 +114,7 @@ export async function removeReaction(messageId: string, emoji: string) {
 /* ─── Mark as Read ─── */
 export async function markAsRead(channelId: string) {
   const user = await requireAuth();
-  await sb()
+  await (await createServerSupabase())
     .from("channel_members")
     .update({ last_read_at: new Date().toISOString() })
     .eq("channel_id", channelId)
@@ -124,7 +124,7 @@ export async function markAsRead(channelId: string) {
 
 /* ─── Get Reactions for a Message ─── */
 export async function getReactions(messageId: string) {
-  const { data } = await sb()
+  const { data } = await (await createServerSupabase())
     .from("message_reactions")
     .select("emoji, user_id, users(display_name)")
     .eq("message_id", messageId);
@@ -135,7 +135,7 @@ export async function getReactions(messageId: string) {
 export async function deleteMessage(messageId: string) {
   const user = await requireAuth();
   
-  const { error } = await sb()
+  const { error } = await (await createServerSupabase())
     .from("messages")
     .delete()
     .eq("id", messageId)

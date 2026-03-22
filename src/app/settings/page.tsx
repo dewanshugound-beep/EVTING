@@ -40,21 +40,30 @@ export default function SettingsPage() {
 
   // Load existing profile
   useEffect(() => {
-    if (!user?.id) return;
-    const sb = createBrowserSupabase();
-    sb.from("users")
-      .select("display_name, bio, website, skills")
-      .eq("id", user.id)
-      .single()
-      .then(({ data }: { data: any }) => {
+    async function loadProfile() {
+      if (!user?.id) return;
+      try {
+        const sb = createBrowserSupabase();
+        const { data, error } = await sb.from("users")
+          .select("display_name, bio, website, skills")
+          .eq("id", user.id)
+          .single();
+
+        if (error) throw error;
+
         if (data) {
           setDisplayName(data.display_name || "");
           setBio(data.bio || "");
           setWebsite(data.website || "");
           setSkills((data.skills || []).join(", "));
         }
+      } catch (err) {
+        console.error("Failed to load profile settings:", err);
+      } finally {
         setLoading(false);
-      });
+      }
+    }
+    loadProfile();
   }, [user?.id]);
 
   const saveProfile = async () => {

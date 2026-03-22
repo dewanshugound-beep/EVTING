@@ -13,11 +13,17 @@ export default function LoginPage() {
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        router.push("/dashboard");
+    async function checkSession() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          router.push("/dashboard");
+        }
+      } catch (err) {
+        console.error("Session check error:", err);
       }
-    });
+    }
+    checkSession();
   }, [router]);
 
   const handleGoogleLogin = async () => {

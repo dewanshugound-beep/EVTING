@@ -217,7 +217,7 @@ export async function toggleLike(postId: string) {
 /* ═══════════════════════════════════════════ */
 export async function getUserPostInteractions(userId: string, postIds: string[]) {
   if (!userId || postIds.length === 0) return { likes: [], bookmarks: [] };
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
 
   const [{ data: likes }, { data: bookmarks }] = await Promise.all([
     supabase.from("likes").select("post_id").eq("user_id", userId).in("post_id", postIds),
@@ -235,7 +235,7 @@ export async function getUserPostInteractions(userId: string, postIds: string[])
 /* ═══════════════════════════════════════════ */
 export async function toggleBookmark(postId: string) {
   const user = await requireMember();
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
 
   const { data: existing } = await supabase
     .from("bookmarks")
@@ -260,7 +260,7 @@ export async function toggleFollow(targetUserId: string) {
   const user = await requireMember();
   if (user.id === targetUserId) return { error: "Cannot follow yourself" };
 
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
 
   const { data: existing } = await supabase
     .from("follows")
@@ -289,7 +289,7 @@ export async function toggleFollow(targetUserId: string) {
 /*  GET FOLLOW STATUS + COUNTS                 */
 /* ═══════════════════════════════════════════ */
 export async function getFollowStatus(currentUserId: string, targetUserId: string) {
-  const { data } = await sb()
+  const { data } = await (await createServerSupabase())
     .from("follows")
     .select("id")
     .eq("follower_id", currentUserId)
@@ -299,7 +299,7 @@ export async function getFollowStatus(currentUserId: string, targetUserId: strin
 }
 
 export async function getFollowCounts(userId: string) {
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
   const [{ count: followers }, { count: following }] = await Promise.all([
     supabase.from("follows").select("*", { count: "exact", head: true }).eq("following_id", userId),
     supabase.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", userId),
@@ -312,7 +312,7 @@ export async function getFollowCounts(userId: string) {
 /* ═══════════════════════════════════════════ */
 export async function deletePost(postId: string) {
   const user = await requireMember();
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
 
   const { data: post } = await supabase
     .from("posts")
@@ -341,7 +341,7 @@ export async function deletePost(postId: string) {
 /* ═══════════════════════════════════════════ */
 export async function votePoll(postId: string, optionIndex: number) {
   const user = await requireMember();
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
 
   // Check if already voted
   const { data: existing } = await supabase
@@ -372,7 +372,7 @@ export async function votePoll(postId: string, optionIndex: number) {
 /*  GET USER POSTS (for profile)               */
 /* ═══════════════════════════════════════════ */
 export async function getUserPosts(userId: string, limit = 20, cursor?: string) {
-  let query = sb()
+  let query = (await createServerSupabase())
     .from("posts")
     .select("*, users(id, display_name, avatar_url, username, role)")
     .eq("user_id", userId)
@@ -390,7 +390,7 @@ export async function getUserPosts(userId: string, limit = 20, cursor?: string) 
 /*  GET USER BOOKMARKS (private)               */
 /* ═══════════════════════════════════════════ */
 export async function getUserBookmarks(userId: string) {
-  const { data } = await sb()
+  const { data } = await (await createServerSupabase())
     .from("bookmarks")
     .select("post_id, posts(*, users(id, display_name, avatar_url, username, role))")
     .eq("user_id", userId)
@@ -404,7 +404,7 @@ export async function getUserBookmarks(userId: string) {
 /* ═══════════════════════════════════════════ */
 export async function getTrendingHashtags() {
   // Get recent posts and extract hashtags
-  const { data: posts } = await sb()
+  const { data: posts } = await (await createServerSupabase())
     .from("posts")
     .select("content")
     .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
@@ -433,7 +433,7 @@ export async function createNotification(
   type: string,
   data: Record<string, any>
 ) {
-  await sb().from("notifications").insert({
+  await (await createServerSupabase()).from("notifications").insert({
     user_id: userId,
     type,
     data,
@@ -444,7 +444,7 @@ export async function createNotification(
 /*  GET NOTIFICATIONS                          */
 /* ═══════════════════════════════════════════ */
 export async function getNotifications(userId: string, limit = 30) {
-  const { data } = await sb()
+  const { data } = await (await createServerSupabase())
     .from("notifications")
     .select("*")
     .eq("user_id", userId)
@@ -454,7 +454,7 @@ export async function getNotifications(userId: string, limit = 30) {
 }
 
 export async function markNotificationsRead(userId: string) {
-  await sb()
+  await (await createServerSupabase())
     .from("notifications")
     .update({ is_read: true })
     .eq("user_id", userId)
@@ -462,7 +462,7 @@ export async function markNotificationsRead(userId: string) {
 }
 
 export async function getUnreadCount(userId: string) {
-  const { count } = await sb()
+  const { count } = await (await createServerSupabase())
     .from("notifications")
     .select("*", { count: "exact", head: true })
     .eq("user_id", userId)

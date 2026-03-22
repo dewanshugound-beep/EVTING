@@ -123,7 +123,7 @@ export async function updateProject(projectId: string, formData: FormData) {
 /* ─── Delete Project ─── */
 export async function deleteProject(projectId: string) {
   const user = await requireAuth();
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
   const { data } = await supabase
     .from("projects")
     .select("user_id")
@@ -137,7 +137,7 @@ export async function deleteProject(projectId: string) {
 /* ─── Toggle Star ─── */
 export async function toggleStar(projectId: string) {
   const user = await requireAuth();
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
 
   const { data: existing } = await supabase
     .from("stars")
@@ -182,7 +182,7 @@ export async function addComment(projectId: string, body: string) {
   const user = await requireAuth();
   if (!body?.trim()) return { error: "Comment cannot be empty" };
 
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
   const { data, error } = await supabase
     .from("comments")
     .insert({ project_id: projectId, user_id: user.id, body: body.trim() })
@@ -206,7 +206,7 @@ export async function addComment(projectId: string, body: string) {
 /* ─── Delete Comment ─── */
 export async function deleteComment(commentId: string, projectId: string) {
   const user = await requireAuth();
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
   const { data } = await supabase
     .from("comments")
     .select("user_id")
@@ -220,7 +220,7 @@ export async function deleteComment(commentId: string, projectId: string) {
 
 /* ─── Get Project ─── */
 export async function getProject(slug: string) {
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
   const { data } = await supabase
     .from("projects")
     .select("*, users(id, display_name, avatar_url, username, rank)")
@@ -231,7 +231,7 @@ export async function getProject(slug: string) {
 
 /* ─── Get Comments ─── */
 export async function getComments(projectId: string) {
-  const { data } = await sb()
+  const { data } = await (await createServerSupabase())
     .from("comments")
     .select("*, users(display_name, avatar_url, username)")
     .eq("project_id", projectId)
@@ -241,14 +241,14 @@ export async function getComments(projectId: string) {
 
 /* ─── Record View ─── */
 export async function recordView(projectId: string) {
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
   await supabase.from("project_views").insert({ project_id: projectId });
   await supabase.rpc("increment_view_count", { project_id_param: projectId });
 }
 
 /* ─── Get Official Projects ─── */
 export async function getOfficialProjects() {
-  const { data } = await sb()
+  const { data } = await (await createServerSupabase())
     .from("projects")
     .select("*, users(display_name, avatar_url, username)")
     .eq("is_official", true)
@@ -260,7 +260,7 @@ export async function getOfficialProjects() {
 
 /* ─── Get Top Users (Leaderboard) ─── */
 export async function getTopUsers() {
-  const { data } = await sb()
+  const { data } = await (await createServerSupabase())
     .from("users")
     .select("id, display_name, avatar_url, username, xp, rank")
     .order("xp", { ascending: false })
@@ -270,7 +270,7 @@ export async function getTopUsers() {
 
 /* ─── Check if User Starred ─── */
 export async function hasStarred(userId: string, projectId: string) {
-  const { data } = await sb()
+  const { data } = await (await createServerSupabase())
     .from("stars")
     .select("user_id")
     .eq("user_id", userId)

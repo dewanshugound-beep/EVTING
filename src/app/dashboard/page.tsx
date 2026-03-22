@@ -19,14 +19,22 @@ export default function DashboardPage() {
 
   useEffect(() => {
     // Check session on load
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
+    async function checkSession() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          router.push("/login");
+        } else {
+          setUser(session.user);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Dashboard session error:", err);
         router.push("/login");
-      } else {
-        setUser(session.user);
-        setLoading(false);
       }
-    });
+    }
+    
+    checkSession();
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {

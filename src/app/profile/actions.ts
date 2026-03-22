@@ -99,7 +99,7 @@ export async function getProfile(userId: string) {
 }
 
 export async function isFollowing(currentUserId: string, targetUserId: string) {
-  const { data } = await sb()
+  const { data } = await (await createServerSupabase())
     .from("follows")
     .select("follower_id")
     .eq("follower_id", currentUserId)

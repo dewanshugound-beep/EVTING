@@ -69,9 +69,16 @@ export default function StoreDetailClient({
 
   // Check initial star status
   React.useEffect(() => {
-    if (user?.id) {
-      hasStarredListing(user.id, listing.id).then(setStarred);
+    async function checkStar() {
+      if (!user?.id) return;
+      try {
+        const isStarred = await hasStarredListing(user.id, listing.id);
+        setStarred(isStarred);
+      } catch (err) {
+        console.error("Failed to check star status:", err);
+      }
     }
+    checkStar();
   }, [user?.id, listing.id]);
 
   const copyInstall = () => {

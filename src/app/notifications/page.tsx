@@ -66,11 +66,18 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user?.id) return;
-    getNotifications(user.id, 50)
-      .then(setNotifications)
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    async function loadNotifications() {
+      if (!user?.id) return;
+      try {
+        const data = await getNotifications(user.id, 50);
+        setNotifications(data);
+      } catch (err) {
+        console.error("Failed to load notifications:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadNotifications();
   }, [user?.id]);
 
   const filteredNotifications = filter === "unread"
