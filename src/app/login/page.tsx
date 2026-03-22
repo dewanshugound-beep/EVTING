@@ -47,11 +47,18 @@ export default function LoginPage() {
 
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email) return;
+
     setLoading("magic");
     try {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+                      (typeof window !== "undefined" ? window.location.origin : "");
+      
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: "https://evting.vercel.app/" },
+        options: { 
+          emailRedirectTo: `${siteUrl}/api/auth/callback?next=/feed` 
+        },
       });
       if (error) throw error;
       setMagicSent(true);
@@ -66,9 +73,12 @@ export default function LoginPage() {
   const handleOAuth = async (provider: "github" | "google" | "discord" | "twitter") => {
     setLoading(provider);
     try {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+                      (typeof window !== "undefined" ? window.location.origin : "");
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: "https://evting.vercel.app/" },
+        options: { redirectTo: `${siteUrl}/api/auth/callback` },
       });
       if (error) throw error;
     } catch (err: any) {
