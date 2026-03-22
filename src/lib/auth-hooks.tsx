@@ -1,10 +1,7 @@
 "use client";
 
-// Client-only hooks and UI components.
-// Imported by auth.tsx via re-export — do not import this file directly.
-
 import React, { useEffect, useState } from "react";
-import { createClient as createBrowserClient } from "@/utils/supabase/client";
+import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
 export function useUser() {
@@ -12,7 +9,6 @@ export function useUser() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    const supabase = createBrowserClient();
     let mounted = true;
 
     async function loadUser() {

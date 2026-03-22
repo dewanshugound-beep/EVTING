@@ -1,114 +1,36 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { createBrowserSupabase } from "@/lib/supabase";
+import { motion } from "framer-motion";
+import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import MatrixRain from "@/components/MatrixRain";
-import {
-  Eye,
-  EyeOff,
-  Mail,
-  Lock,
-  Github,
-  Loader2,
-  Zap,
-  MessageSquare,
-  Twitter,
-  ArrowRight,
-  User,
-  LogOut,
-} from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function LoginPage() {
   const router = useRouter();
-  const supabase = createBrowserSupabase();
-
-  const [mode, setMode] = useState<"password" | "magic">("password");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPass, setShowPass] = useState(false);
-  const [loading, setLoading] = useState<string | null>(null);
-  const [magicSent, setMagicSent] = useState(false);
-
-  const handleEmailLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading("email");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success("Welcome back!");
-      router.push("/feed");
-      router.refresh();
-    }
-    setLoading(null);
-  };
-
-  const [sessionUser, setSessionUser] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    // Check session on load
-    async function checkSession() {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSessionUser(session?.user ?? null);
-    }
-    checkSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSessionUser(session?.user ?? null);
-      if (session?.user) {
-        toast.success("Welcome back!");
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        router.push("/dashboard");
       }
     });
+  }, [router]);
 
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const handleMagicLink = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-
-    setLoading("magic");
+  const handleGoogleLogin = async () => {
+    setLoading(true);
     try {
-// Removed dynamic siteUrl calculation for hardcoded production redirect
-      //   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
-      //                   (typeof window !== "undefined" ? window.location.origin : "");
-      
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { 
-          emailRedirectTo: "https://evting.vercel.app/" 
-        },
-      });
-      if (error) throw error;
-      setMagicSent(true);
-      toast.success("Magic link sent! Check your inbox.");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to send link");
-    } finally {
-      setLoading(null);
-    }
-  };
-
-  const handleOAuth = async (provider: "github" | "google" | "discord" | "twitter") => {
-    setLoading(provider);
-    try {
-// Removed dynamic siteUrl calculation for hardcoded production redirect
-      //   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
-      //                   (typeof window !== "undefined" ? window.location.origin : "");
-
       const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: { redirectTo: "https://evting.vercel.app/" },
+        provider: "google",
+        options: { redirectTo: "https://evting.vercel.app/dashboard" },
       });
       if (error) throw error;
     } catch (err: any) {
-      toast.error(err.message || "OAuth transition failed");
-      setLoading(null);
+      toast.error(err.message || "Login failed");
+      setLoading(false);
     }
   };
 
@@ -125,190 +47,35 @@ export default function LoginPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="relative z-10 w-full max-w-[420px]"
+        className="relative z-10 w-full max-w-[400px]"
       >
-        {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
-          <Link href="/" className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 via-violet-600 to-emerald-500 shadow-[0_0_40px_rgba(88,166,255,0.3)] mb-4">
-            <span className="text-xl font-black text-white tracking-tighter">EH</span>
-          </Link>
-          <h1 className="text-2xl font-black text-white tracking-tight">Welcome back</h1>
-          <p className="text-zinc-500 text-sm mt-1">Sign in to EVTING HUB</p>
-        </div>
-
-        <div className="rounded-2xl border border-white/[0.08] bg-black/50 backdrop-blur-2xl p-6 shadow-2xl shadow-black/60">
-          {/* OAuth providers */}
-          {sessionUser ? (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center gap-5 py-6">
-              <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-violet-600 rounded-full blur opacity-40 group-hover:opacity-60 transition duration-1000 group-hover:duration-200"></div>
-                <div className="relative h-20 w-20 rounded-full border-2 border-white/10 p-1 bg-zinc-900">
-                  {sessionUser.user_metadata.picture ? (
-                    <img src={sessionUser.user_metadata.picture} alt="" className="w-full h-full rounded-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full rounded-full bg-zinc-800 flex items-center justify-center">
-                      <User size={32} className="text-zinc-600" />
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="text-center">
-                <h2 className="text-xl font-black text-white tracking-tight">{sessionUser.user_metadata.full_name || sessionUser.email}</h2>
-                <p className="text-zinc-500 text-sm mt-0.5">Logged in via {sessionUser.app_metadata.provider || "email"}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-3 w-full">
-                <Link href="/feed" className="flex items-center justify-center gap-2 h-11 rounded-xl bg-white/5 border border-white/[0.08] text-sm text-white font-bold hover:bg-white/10 transition-all">
-                  Dashboard
-                </Link>
-                <button 
-                  onClick={() => supabase.auth.signOut()} 
-                  className="flex items-center justify-center gap-2 h-11 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-500 font-bold hover:bg-red-500/20 transition-all cursor-pointer"
-                >
-                  <LogOut size={16} /> Sign Out
-                </button>
-              </div>
-            </motion.div>
-          ) : (
-            <>
-              {/* OAuth Providers */}
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                <OAuthButton
-                  icon={<GoogleIcon />}
-                  label="Google"
-                  onClick={() => handleOAuth("google")}
-                  loading={loading === "google"}
-                />
-                <OAuthButton
-                  icon={<Github size={16} />}
-                  label="GitHub"
-                  onClick={() => handleOAuth("github")}
-                  loading={loading === "github"}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                <OAuthButton
-                  icon={<MessageSquare size={16} />}
-                  label="Discord"
-                  onClick={() => handleOAuth("discord")}
-                  loading={loading === "discord"}
-                />
-                <OAuthButton
-                  icon={<Twitter size={15} />}
-                  label="Twitter"
-                  onClick={() => handleOAuth("twitter")}
-                  loading={loading === "twitter"}
-                />
-              </div>
-            </>
-          )}
-
-          <div className="relative flex items-center gap-3 mb-5">
-            <div className="flex-1 h-px bg-white/8" />
-            <span className="text-[11px] text-zinc-600 font-medium lowercase tracking-wider opacity-60">or continue with email</span>
-            <div className="flex-1 h-px bg-white/8" />
+        <div className="rounded-3xl border border-white/[0.08] bg-zinc-900/50 backdrop-blur-2xl p-8 shadow-2xl shadow-black/60 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 shadow-xl mx-auto mb-6">
+            <span className="text-2xl font-black text-white">EH</span>
           </div>
+          
+          <h1 className="text-2xl font-black text-white tracking-tight mb-2">Welcome to EVTING HUB</h1>
+          <p className="text-zinc-500 text-sm mb-8">The premium developer ecosystem</p>
 
-          {/* Mode toggle */}
-          <div className="flex rounded-xl bg-white/4 p-1 mb-5">
-            <button
-              onClick={() => setMode("password")}
-              className={`flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all cursor-pointer ${
-                mode === "password" ? "bg-white/10 text-white" : "text-zinc-600 hover:text-zinc-400"
-              }`}
-            >
-              <Lock size={12} className="inline mr-1.5" />Password
-            </button>
-            <button
-              onClick={() => setMode("magic")}
-              className={`flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all cursor-pointer ${
-                mode === "magic" ? "bg-white/10 text-white" : "text-zinc-600 hover:text-zinc-400"
-              }`}
-            >
-              <Zap size={12} className="inline mr-1.5" />Magic Link
-            </button>
-          </div>
-
-          <AnimatePresence mode="wait">
-            {magicSent ? (
-              <motion.div
-                key="sent"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center py-6"
-              >
-                <div className="text-4xl mb-3">📬</div>
-                <p className="text-white font-bold mb-1">Check your email</p>
-                <p className="text-zinc-500 text-sm">We sent a magic link to <span className="text-accent font-medium">{email}</span></p>
-                <button onClick={() => setMagicSent(false)} className="mt-4 text-xs text-zinc-600 hover:text-zinc-400 cursor-pointer">
-                  Try again
-                </button>
-              </motion.div>
-            ) : mode === "password" ? (
-              <motion.form key="password" initial={{ opacity: 0 }} animate={{ opacity: 1 }} onSubmit={handleEmailLogin} className="space-y-3">
-                <div>
-                  <label className="text-[11px] text-zinc-500 font-medium mb-1 block">Email</label>
-                  <div className="relative">
-                    <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
-                    <input
-                      type="email" value={email} onChange={e => setEmail(e.target.value)}
-                      required placeholder="you@example.com"
-                      className="w-full h-10 pl-9 pr-4 rounded-xl bg-white/5 border border-white/[0.08] text-sm text-white placeholder:text-zinc-700 outline-none focus:border-accent/50 focus:bg-white/8 transition-all"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-[11px] text-zinc-500 font-medium mb-1 block">Password</label>
-                  <div className="relative">
-                    <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
-                    <input
-                      type={showPass ? "text" : "password"} value={password}
-                      onChange={e => setPassword(e.target.value)}
-                      required placeholder="••••••••"
-                      className="w-full h-10 pl-9 pr-10 rounded-xl bg-white/5 border border-white/[0.08] text-sm text-white placeholder:text-zinc-700 outline-none focus:border-accent/50 focus:bg-white/8 transition-all"
-                    />
-                    <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400 cursor-pointer">
-                      {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
-                  </div>
-                </div>
-                <motion.button
-                  type="submit" disabled={!!loading}
-                  whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
-                  className="w-full h-11 rounded-xl bg-accent text-white text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-accent/20 disabled:opacity-50 cursor-pointer mt-2"
-                >
-                  {loading === "email" ? <Loader2 size={16} className="animate-spin" /> : <><span>Sign In</span><ArrowRight size={14} /></>}
-                </motion.button>
-              </motion.form>
+          <motion.button
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full flex items-center justify-center gap-3 h-12 rounded-xl bg-white text-black font-bold text-sm shadow-xl hover:bg-zinc-200 transition-all cursor-pointer disabled:opacity-50"
+          >
+            {loading ? (
+              <Loader2 size={20} className="animate-spin" />
             ) : (
-              <motion.form key="magic" initial={{ opacity: 0 }} animate={{ opacity: 1 }} onSubmit={handleMagicLink} className="space-y-3">
-                <div>
-                  <label className="text-[11px] text-zinc-500 font-medium mb-1 block">Email</label>
-                  <div className="relative">
-                    <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
-                    <input
-                      type="email" value={email} onChange={e => setEmail(e.target.value)}
-                      required placeholder="you@example.com"
-                      className="w-full h-10 pl-9 pr-4 rounded-xl bg-white/5 border border-white/[0.08] text-sm text-white placeholder:text-zinc-700 outline-none focus:border-accent/50 focus:bg-white/8 transition-all"
-                    />
-                  </div>
-                </div>
-                <motion.button
-                  type="submit" disabled={!!loading}
-                  whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }}
-                  className="w-full h-11 rounded-xl bg-violet-600 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-violet-500/20 disabled:opacity-50 cursor-pointer"
-                >
-                  {loading === "magic" ? <Loader2 size={16} className="animate-spin" /> : <><Zap size={14} /><span>Send Magic Link</span></>}
-                </motion.button>
-              </motion.form>
+              <>
+                <GoogleIcon />
+                <span>Continue with Google</span>
+              </>
             )}
-          </AnimatePresence>
+          </motion.button>
 
-          <p className="text-center text-[12px] text-zinc-600 mt-5">
-            Don{"'"}t have an account?{" "}
-            <Link href="/register" className="text-accent font-semibold hover:text-blue-400 transition-colors">
-              Create one free
-            </Link>
+          <p className="text-[10px] text-zinc-600 mt-8 uppercase tracking-widest font-medium">
+            Authorized Production Redirect Active
           </p>
         </div>
       </motion.div>
@@ -316,22 +83,9 @@ export default function LoginPage() {
   );
 }
 
-function OAuthButton({ icon, label, onClick, loading }: { icon: React.ReactNode; label: string; onClick: () => void; loading: boolean }) {
-  return (
-    <motion.button
-      onClick={onClick} disabled={loading}
-      whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-      className="flex items-center justify-center gap-2 h-10 rounded-xl bg-white/5 border border-white/[0.08] text-sm text-zinc-300 font-medium hover:bg-white/10 hover:border-white/15 transition-all cursor-pointer disabled:opacity-50"
-    >
-      {loading ? <Loader2 size={14} className="animate-spin" /> : icon}
-      <span className="text-[12px]">{label}</span>
-    </motion.button>
-  );
-}
-
 function GoogleIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24">
+    <svg width="20" height="20" viewBox="0 0 24 24">
       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
       <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
