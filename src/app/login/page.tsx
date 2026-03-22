@@ -51,13 +51,14 @@ export default function LoginPage() {
 
     setLoading("magic");
     try {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
-                      (typeof window !== "undefined" ? window.location.origin : "");
+// Removed dynamic siteUrl calculation for hardcoded production redirect
+      //   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+      //                   (typeof window !== "undefined" ? window.location.origin : "");
       
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: { 
-          emailRedirectTo: `${siteUrl}/api/auth/callback?next=/feed` 
+          emailRedirectTo: "https://evting.vercel.app/" 
         },
       });
       if (error) throw error;
@@ -73,12 +74,13 @@ export default function LoginPage() {
   const handleOAuth = async (provider: "github" | "google" | "discord" | "twitter") => {
     setLoading(provider);
     try {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
-                      (typeof window !== "undefined" ? window.location.origin : "");
+// Removed dynamic siteUrl calculation for hardcoded production redirect
+      //   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+      //                   (typeof window !== "undefined" ? window.location.origin : "");
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${siteUrl}/api/auth/callback` },
+        options: { redirectTo: "https://evting.vercel.app/" },
       });
       if (error) throw error;
     } catch (err: any) {
