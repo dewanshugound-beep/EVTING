@@ -21,24 +21,34 @@ export default function RequestDevTagPage() {
   const [skills, setSkills] = useState("");
   const [targetRole, setTargetRole] = useState<"dev" | "certified_dev">("dev");
 
+  const loadExistingRequest = React.useCallback(async () => {
+    if (!user) return;
+    try {
+      const sb = createBrowserSupabase();
+      const { data, error } = await sb.from("dev_requests")
+        .select("*").eq("user_id", user.id)
+        .order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (error) throw error;
+      setExistingRequest(data);
+    } catch (err: any) {
+      console.error("Failed to load existing dev request:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (!isLoaded) return;
     if (!user) { router.push("/login"); return; }
-    if (user.role === "dev" || user.role === "certified_dev" || user.role === "admin") {
-      // Already has dev access
+    
+    const isDevAlready = user.role === "dev" || user.role === "certified_dev" || user.role === "admin";
+    if (isDevAlready) {
+      setLoading(false);
+      return;
     }
+    
     loadExistingRequest();
-  }, [user, isLoaded]);
-
-  async function loadExistingRequest() {
-    if (!user) return;
-    const sb = createBrowserSupabase();
-    const { data } = await sb.from("dev_requests")
-      .select("*").eq("user_id", user.id)
-      .order("created_at", { ascending: false }).limit(1).maybeSingle();
-    setExistingRequest(data);
-    setLoading(false);
-  }
+  }, [user, isLoaded, router, loadExistingRequest]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -46,23 +56,27 @@ export default function RequestDevTagPage() {
     if (reason.length < 50) return toast.error("Please write at least 50 characters explaining why you want the Dev tag.");
 
     setSubmitting(true);
-    const sb = createBrowserSupabase();
-    const { error } = await sb.from("dev_requests").insert({
-      user_id: user.id,
-      reason,
-      portfolio_url: portfolioUrl.trim() || null,
-      skills: skills.trim() || null,
-      target_role: targetRole,
-      status: "pending",
-    });
+    try {
+      const sb = createBrowserSupabase();
+      const { error } = await sb.from("dev_requests").insert({
+        user_id: user.id,
+        reason,
+        portfolio_url: portfolioUrl.trim() || null,
+        skills: skills.trim() || null,
+        target_role: targetRole,
+        status: "pending",
+      });
 
-    if (error) {
-      toast.error("Failed to submit: " + error.message);
-    } else {
+      if (error) throw error;
+
       toast.success("Request submitted! You'll be notified when admin reviews it.");
-      loadExistingRequest();
+      await loadExistingRequest();
+    } catch (err: any) {
+      console.error("Dev request submission failed:", err);
+      toast.error(`Submission failed: ${err.message || "Network interlink compromised"}`);
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   }
 
   if (loading) {
@@ -117,7 +131,10 @@ export default function RequestDevTagPage() {
           {existingRequest.status === "approved" && (
             <div className="flex items-center gap-3">
               <CheckCircle size={20} className="text-neon-green" />
-              <p className="font-bold text-white">Your request was approved! 🎉</p>
+              <div>
+                <p className="font-bold text-white">Your request was approved! 🎉</p>
+                <p className="text-sm text-zinc-400">Please refresh or re-login to update your permissions.</p>
+              </div>
             </div>
           )}
           {existingRequest.status === "rejected" && (

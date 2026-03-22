@@ -61,19 +61,35 @@ export default function StoreUploadPage() {
     if (file.size > 100 * 1024 * 1024) return toast.error("File too large. Max 100MB.");
 
     setUploading(true);
-    const sb = createBrowserSupabase();
-    const ext = file.name.split(".").pop();
-    const path = `tools/${user.id}/${Date.now()}.${ext}`;
+    try {
+      const sb = createBrowserSupabase();
+      
+      // Cleanup previous file if exists to prevent orphans
+      if (fileUrl) {
+        try {
+          const oldPath = fileUrl.split("/storage/v1/object/public/tools/")[1];
+          if (oldPath) await sb.storage.from("tools").remove([oldPath]);
+        } catch (cleanupErr) {
+          console.warn("Failed to cleanup orphaned file:", cleanupErr);
+        }
+      }
 
-    const { error, data } = await sb.storage.from("tools").upload(path, file);
-    if (error) {
-      toast.error("Upload failed: " + error.message);
-    } else {
+      const fileExt = file.name.split(".").pop()?.toLowerCase() || "bin";
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${fileExt}`;
+      const path = `tools/${user.id}/${fileName}`;
+
+      const { error } = await sb.storage.from("tools").upload(path, file);
+      if (error) throw error;
+
       const { data: urlData } = sb.storage.from("tools").getPublicUrl(path);
       setFileUrl(urlData.publicUrl);
-      toast.success("File uploaded!");
+      toast.success("File uploaded successfully.");
+    } catch (err: any) {
+      console.error("Upload failed:", err);
+      toast.error(`Upload error: ${err.message || "Interlink failure"}`);
+    } finally {
+      setUploading(false);
     }
-    setUploading(false);
   };
 
   const addTag = () => {
@@ -94,7 +110,7 @@ export default function StoreUploadPage() {
 
     // Check if certified dev (auto-approve)
     const isCertified = user.role === "certified_dev" || user.role === "admin";
-    const slug = slugify(title) + "-" + Math.random().toString(36).slice(2, 6);
+    const slug = slugify(title) + "-" + Math.random().toString(36).slice(2, 10);
 
     const { error } = await sb.from("store_listings").insert({
       user_id: user.id,
@@ -111,6 +127,8 @@ export default function StoreUploadPage() {
       file_hash: fileHash || null,
       price: parseFloat(price) || 0,
       is_paid: parseFloat(price) > 0,
+      security_desc: securityDesc,
+      requires_elevated: requiresElevated,
       status: isCertified ? "approved" : "pending",
     });
 
@@ -123,6 +141,14 @@ export default function StoreUploadPage() {
     setSubmitting(false);
   };
 
+  if (!isLoaded) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 size={24} className="animate-spin text-accent" />
+      </div>
+    );
+  }
+
   if (isLoaded && !user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
@@ -133,7 +159,8 @@ export default function StoreUploadPage() {
     );
   }
 
-  if (isLoaded && user && user.role !== "dev" && user.role !== "certified_dev" && user.role !== "admin") {
+  const isDev = user.role === "dev" || user.role === "certified_dev" || user.role === "admin";
+  if (isLoaded && user && !isDev) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
         <Shield size={40} className="text-amber-400" />
@@ -202,7 +229,7 @@ export default function StoreUploadPage() {
                 <label className="label-xs">Description (Markdown supported)</label>
                 <textarea value={description} onChange={e => setDescription(e.target.value)} rows={8}
                   placeholder="## About\n\nDescribe your tool in detail. Markdown is supported."
-                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/8 text-sm text-white placeholder:text-zinc-700 outline-none focus:border-accent/30 resize-none font-mono" />
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/[0.08] text-sm text-white placeholder:text-zinc-700 outline-none focus:border-accent/30 resize-none font-mono" />
               </div>
             </div>
           )}
@@ -281,7 +308,7 @@ export default function StoreUploadPage() {
                   <input value={tagInput} onChange={e => setTagInput(e.target.value)}
                     onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
                     placeholder="Add tag..." className="input-field flex-1" />
-                  <button onClick={addTag} className="px-4 py-2 rounded-xl bg-white/5 border border-white/8 text-sm text-zinc-400 hover:bg-white/10 cursor-pointer">
+                  <button onClick={addTag} className="px-4 py-2 rounded-xl bg-white/5 border border-white/[0.08] text-sm text-zinc-400 hover:bg-white/10 cursor-pointer">
                     <Plus size={14} />
                   </button>
                 </div>
@@ -315,7 +342,7 @@ export default function StoreUploadPage() {
                 <label className="label-xs">What does this tool do? (be specific)</label>
                 <textarea value={securityDesc} onChange={e => setSecurityDesc(e.target.value)} rows={5}
                   placeholder="Describe exactly what the tool does, what APIs it calls, what data it accesses, and any network connections it makes..."
-                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/8 text-sm text-white placeholder:text-zinc-700 outline-none focus:border-accent/30 resize-none" />
+                  className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/[0.08] text-sm text-white placeholder:text-zinc-700 outline-none focus:border-accent/30 resize-none" />
               </div>
               <div className="flex items-center gap-3 p-4 rounded-xl bg-white/[0.02] border border-white/5">
                 <input type="checkbox" id="elevated" checked={requiresElevated} onChange={e => setRequiresElevated(e.target.checked)}
@@ -336,7 +363,7 @@ export default function StoreUploadPage() {
           {step === 5 && (
             <div className="space-y-4">
               <h2 className="text-lg font-black text-white">Review & Submit</h2>
-              <div className="p-6 rounded-2xl border border-white/8 bg-white/[0.02] space-y-4">
+              <div className="p-6 rounded-2xl border border-white/[0.08] bg-white/[0.02] space-y-4">
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <p className="text-[10px] text-zinc-600 uppercase tracking-widest mb-1">Title</p>
@@ -370,7 +397,7 @@ export default function StoreUploadPage() {
                     <p className="text-[10px] text-zinc-600 uppercase tracking-widest mb-2">Tags</p>
                     <div className="flex flex-wrap gap-1.5">
                       {tags.map(t => (
-                        <span key={t} className="px-2 py-0.5 rounded-full bg-white/5 border border-white/8 text-[11px] text-zinc-400">{t}</span>
+                        <span key={t} className="px-2 py-0.5 rounded-full bg-white/5 border border-white/[0.08] text-[11px] text-zinc-400">{t}</span>
                       ))}
                     </div>
                   </div>
@@ -390,7 +417,7 @@ export default function StoreUploadPage() {
 
               <motion.button
                 onClick={handleSubmit}
-                disabled={submitting || !fileUrl || !title || !category}
+                disabled={submitting || !fileUrl || !title || !category || !tagline}
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
                 className="w-full h-12 rounded-xl bg-accent text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-accent/20 disabled:opacity-50 cursor-pointer"
@@ -408,7 +435,7 @@ export default function StoreUploadPage() {
         <button
           onClick={() => setStep(Math.max(1, step - 1))}
           disabled={step === 1}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/8 text-sm text-zinc-400 hover:bg-white/5 disabled:opacity-30 cursor-pointer transition-all"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/[0.08] text-sm text-zinc-400 hover:bg-white/5 disabled:opacity-30 cursor-pointer transition-all"
         >
           <ArrowLeft size={14} /> Back
         </button>

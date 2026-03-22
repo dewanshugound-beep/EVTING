@@ -103,13 +103,13 @@ export default function RegisterPage() {
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <Link href="/" className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 via-violet-600 to-emerald-500 shadow-[0_0_40px_rgba(57,211,83,0.25)] mb-4">
-            <span className="text-xl font-black text-white tracking-tighter">MX</span>
+            <span className="text-xl font-black text-white tracking-tighter">EH</span>
           </Link>
-          <h1 className="text-2xl font-black text-white tracking-tight">Join MatrixIN</h1>
+          <h1 className="text-2xl font-black text-white tracking-tight">Join EVTING HUB</h1>
           <p className="text-zinc-500 text-sm mt-1">The developer platform for builders</p>
         </div>
 
-        <div className="rounded-2xl border border-white/8 bg-black/50 backdrop-blur-2xl p-6 shadow-2xl shadow-black/60">
+        <div className="rounded-2xl border border-white/[0.08] bg-black/50 backdrop-blur-2xl p-6 shadow-2xl shadow-black/60">
           {done ? (
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-8">
               <div className="text-5xl mb-4">📬</div>
@@ -133,7 +133,7 @@ export default function RegisterPage() {
                 ].map(({ p, icon, label }) => (
                   <motion.button key={p} onClick={() => handleOAuth(p)} disabled={!!loading}
                     whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                    className="flex items-center justify-center gap-2 h-10 rounded-xl bg-white/5 border border-white/8 text-[12px] text-zinc-300 font-medium hover:bg-white/10 transition-all cursor-pointer disabled:opacity-50"
+                    className="flex items-center justify-center gap-2 h-10 rounded-xl bg-white/5 border border-white/[0.08] text-[12px] text-zinc-300 font-medium hover:bg-white/10 transition-all cursor-pointer disabled:opacity-50"
                   >
                     {loading === p ? <Loader2 size={13} className="animate-spin" /> : icon}
                     {label}
@@ -149,35 +149,38 @@ export default function RegisterPage() {
 
               <form onSubmit={handleRegister} className="space-y-3">
                 <div>
-                  <label className="text-[11px] text-zinc-500 font-medium mb-1 block">Username</label>
+                  <label htmlFor="username" className="text-[11px] text-zinc-500 font-medium mb-1 block">Username</label>
                   <div className="relative">
                     <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
                     <input
+                      id="username"
                       value={username} onChange={e => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
                       required placeholder="devanshu_" maxLength={30}
-                      className="w-full h-10 pl-9 pr-4 rounded-xl bg-white/5 border border-white/8 text-sm text-white placeholder:text-zinc-700 outline-none focus:border-accent/50 transition-all"
+                      className="w-full h-10 pl-9 pr-4 rounded-xl bg-white/5 border border-white/[0.08] text-sm text-white placeholder:text-zinc-700 outline-none focus:border-accent/50 transition-all"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="text-[11px] text-zinc-500 font-medium mb-1 block">Email</label>
+                  <label htmlFor="email" className="text-[11px] text-zinc-500 font-medium mb-1 block">Email</label>
                   <div className="relative">
                     <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
                     <input
+                      id="email"
                       type="email" value={email} onChange={e => setEmail(e.target.value)}
                       required placeholder="you@example.com"
-                      className="w-full h-10 pl-9 pr-4 rounded-xl bg-white/5 border border-white/8 text-sm text-white placeholder:text-zinc-700 outline-none focus:border-accent/50 transition-all"
+                      className="w-full h-10 pl-9 pr-4 rounded-xl bg-white/5 border border-white/[0.08] text-sm text-white placeholder:text-zinc-700 outline-none focus:border-accent/50 transition-all"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="text-[11px] text-zinc-500 font-medium mb-1 block">Password</label>
+                  <label htmlFor="password" className="text-[11px] text-zinc-500 font-medium mb-1 block">Password</label>
                   <div className="relative">
                     <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
                     <input
+                      id="password"
                       type={showPass ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
                       required placeholder="••••••••" minLength={8}
-                      className="w-full h-10 pl-9 pr-10 rounded-xl bg-white/5 border border-white/8 text-sm text-white placeholder:text-zinc-700 outline-none focus:border-accent/50 transition-all"
+                      className="w-full h-10 pl-9 pr-10 rounded-xl bg-white/5 border border-white/[0.08] text-sm text-white placeholder:text-zinc-700 outline-none focus:border-accent/50 transition-all"
                     />
                     <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400 cursor-pointer">
                       {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
@@ -186,14 +189,15 @@ export default function RegisterPage() {
                   <PasswordStrength password={password} />
                 </div>
                 <div>
-                  <label className="text-[11px] text-zinc-500 font-medium mb-1 block">Confirm Password</label>
+                  <label htmlFor="confirmPassword" className="text-[11px] text-zinc-500 font-medium mb-1 block">Confirm Password</label>
                   <div className="relative">
                     <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
                     <input
+                      id="confirmPassword"
                       type="password" value={confirmPass} onChange={e => setConfirmPass(e.target.value)}
                       required placeholder="••••••••"
                       className={`w-full h-10 pl-9 pr-4 rounded-xl bg-white/5 border text-sm text-white placeholder:text-zinc-700 outline-none transition-all ${
-                        confirmPass && password !== confirmPass ? "border-red-500/50" : "border-white/8 focus:border-accent/50"
+                        confirmPass && password !== confirmPass ? "border-red-500/50" : "border-white/[0.08] focus:border-accent/50"
                       }`}
                     />
                   </div>
@@ -201,8 +205,8 @@ export default function RegisterPage() {
 
                 <p className="text-[10px] text-zinc-600 leading-relaxed">
                   By signing up you agree to our{" "}
-                  <span className="text-accent cursor-pointer hover:underline">Terms of Service</span> and{" "}
-                  <span className="text-accent cursor-pointer hover:underline">Privacy Policy</span>.
+                  <Link href="/terms" className="text-accent hover:underline">Terms of Service</Link> and{" "}
+                  <Link href="/privacy" className="text-accent hover:underline">Privacy Policy</Link>.
                 </p>
 
                 <motion.button

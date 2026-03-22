@@ -39,6 +39,9 @@ export default function AdminClient({
   const [stats, setStats] = useState({ users: 0, posts: 0, listings: 0, openReports: 0, pendingDev: 0, pendingStore: 0 });
   const [userSearch, setUserSearch] = useState("");
   const [loading, setLoading] = useState(false);
+  const [devRequestsLoading, setDevRequestsLoading] = useState(false);
+  const [storeQueueLoading, setStoreQueueLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const sb = createBrowserSupabase() as any;
 
   useEffect(() => {
@@ -52,114 +55,173 @@ export default function AdminClient({
   }, [tab]);
 
   async function loadStats() {
-    const [
-      { count: userCount },
-      { count: postCount },
-      { count: listingCount },
-      { count: openReports },
-      { count: pendingDev },
-      { count: pendingStore },
-    ] = await Promise.all([
-      sb.from("users").select("*", { count: "exact", head: true }),
-      sb.from("posts").select("*", { count: "exact", head: true }),
-      sb.from("store_listings").select("*", { count: "exact", head: true }),
-      sb.from("reports").select("*", { count: "exact", head: true }).eq("status", "open"),
-      sb.from("dev_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
-      sb.from("store_listings").select("*", { count: "exact", head: true }).eq("status", "pending"),
-    ]);
-    setStats({
-      users: userCount || 0,
-      posts: postCount || 0,
-      listings: listingCount || 0,
-      openReports: openReports || 0,
-      pendingDev: pendingDev || 0,
-      pendingStore: pendingStore || 0,
-    });
+    try {
+      const results = await Promise.allSettled([
+        sb.from("users").select("*", { count: "exact", head: true }),
+        sb.from("posts").select("*", { count: "exact", head: true }),
+        sb.from("store_listings").select("*", { count: "exact", head: true }),
+        sb.from("reports").select("*", { count: "exact", head: true }).eq("status", "open"),
+        sb.from("dev_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
+        sb.from("store_listings").select("*", { count: "exact", head: true }).eq("status", "pending"),
+      ]);
+
+      const [usersRes, postsRes, listingsRes, reportsRes, devRes, queueRes] = results;
+
+      setStats({
+        users: usersRes.status === 'fulfilled' ? (usersRes.value as any).count || 0 : stats.users,
+        posts: postsRes.status === 'fulfilled' ? (postsRes.value as any).count || 0 : stats.posts,
+        listings: listingsRes.status === 'fulfilled' ? (listingsRes.value as any).count || 0 : stats.listings,
+        openReports: reportsRes.status === 'fulfilled' ? (reportsRes.value as any).count || 0 : stats.openReports,
+        pendingDev: devRes.status === 'fulfilled' ? (devRes.value as any).count || 0 : stats.pendingDev,
+        pendingStore: queueRes.status === 'fulfilled' ? (queueRes.value as any).count || 0 : stats.pendingStore,
+      });
+
+      // Log errors if any
+      results.forEach((res, i) => {
+        if (res.status === 'rejected') console.error(`Admin stat query ${i} failed:`, res.reason);
+      });
+    } catch (err) {
+      console.error("Failed to load dashboard stats:", err);
+      toast.error("Dashboard stats sync failed");
+    }
   }
 
   async function loadDevRequests() {
-    setLoading(true);
-    const { data } = await sb.from("dev_requests")
-      .select("*, users(id, username, display_name, avatar_url, email, created_at)")
-      .order("created_at", { ascending: false });
-    setDevRequests(data || []);
-    setLoading(false);
+    setDevRequestsLoading(true);
+    try {
+      const { data, error } = await sb.from("dev_requests")
+        .select("*, users(id, username, display_name, avatar_url, email, created_at)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setDevRequests(data || []);
+    } catch (err: any) {
+      console.error("Failed to load dev requests:", err);
+      toast.error(`Queue error: ${err.message || 'Transmission failed'}`);
+    } finally {
+      setDevRequestsLoading(false);
+    }
   }
 
   async function loadStoreQueue() {
-    setLoading(true);
-    const { data } = await sb.from("store_listings")
-      .select("*, users(id, username, display_name)")
-      .eq("status", "pending")
-      .order("created_at", { ascending: false });
-    setStoreQueue(data || []);
-    setLoading(false);
+    setStoreQueueLoading(true);
+    try {
+      const { data, error } = await sb.from("store_listings")
+        .select("*, users(id, username, display_name)")
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setStoreQueue(data || []);
+    } catch (err: any) {
+      console.error("Failed to load store queue:", err);
+      toast.error(`Queue error: ${err.message || 'Transmission failed'}`);
+    } finally {
+      setStoreQueueLoading(false);
+    }
   }
 
   async function loadFeatureFlags() {
-    const { data } = await sb.from("feature_flags").select("*").order("key");
-    setFeatureFlags(data || []);
+    try {
+      const { data, error } = await sb.from("feature_flags").select("*").order("key");
+      if (error) throw error;
+      setFeatureFlags(data || []);
+    } catch (err: any) {
+      console.error("Failed to load feature flags:", err);
+    }
   }
 
   async function handleDevRequest(id: string, userId: string, action: "dev" | "certified_dev" | "reject", reason?: string) {
     setLoading(true);
-    if (action === "reject") {
-      await sb.from("dev_requests").update({ status: "rejected", admin_note: reason || "Rejected" }).eq("id", id);
-      await sb.from("notifications").insert({
-        user_id: userId, type: "dev_rejected",
-        data: { message: "Your Dev tag request was not approved. " + (reason || "") },
+    try {
+      const { error } = await sb.rpc("process_dev_request", {
+        p_request_id: id,
+        p_target_user_id: userId,
+        p_new_status: action === "reject" ? "rejected" : "approved",
+        p_new_role: action === "reject" ? "member" : action,
+        p_admin_note: reason || (action === "reject" ? "Rejected" : "Approved"),
+        p_notif_type: action === "reject" ? "dev_rejected" : "dev_approved",
+        p_notif_message: action === "reject" 
+          ? "Your Dev tag request was not approved. " + (reason || "")
+          : `Congratulations! You've been granted the ${action === "certified_dev" ? "Certified Dev" : "Dev"} role.`
       });
-    } else {
-      await sb.from("dev_requests").update({ status: "approved" }).eq("id", id);
-      await sb.from("users").update({ role: action }).eq("id", userId);
-      await sb.from("notifications").insert({
-        user_id: userId, type: "dev_approved",
-        data: { message: `Congratulations! You've been granted the ${action === "certified_dev" ? "Certified Dev" : "Dev"} role.` },
-      });
+
+      if (error) throw error;
+
+      toast.success(`Dev request ${action === "reject" ? "rejected" : "approved"}`);
+      await Promise.all([loadDevRequests(), loadStats()]);
+    } catch (err: any) {
+      console.error("Dev request processing failed:", err);
+      toast.error(`Permission update failed: ${err.message || "Unknown anomaly"}`);
+    } finally {
+      setLoading(false);
     }
-    toast.success(`Dev request ${action === "reject" ? "rejected" : "approved"}`);
-    loadDevRequests();
-    loadStats();
-    setLoading(false);
   }
 
   async function handleStoreListing(id: string, userId: string, action: "approve" | "reject", reason?: string) {
-    const status = action === "approve" ? "approved" : "rejected";
-    await sb.from("store_listings").update({ status, admin_note: reason || null }).eq("id", id);
-    await sb.from("notifications").insert({
-      user_id: userId, type: `listing_${action === "approve" ? "approved" : "rejected"}`,
-      data: { message: action === "approve" ? "Your store listing is now live!" : `Listing rejected: ${reason || "Does not meet guidelines"}` },
-    });
-    toast.success(`Listing ${action}d`);
-    loadStoreQueue();
-    loadStats();
+    setLoading(true);
+    try {
+      const status = action === "approve" ? "approved" : "rejected";
+      const { error: updateError } = await sb.from("store_listings").update({ status, admin_note: reason || null }).eq("id", id);
+      if (updateError) throw updateError;
+
+      const { error: notifError } = await sb.from("notifications").insert({
+        user_id: userId, type: `listing_${action === "approve" ? "approved" : "rejected"}`,
+        data: { message: action === "approve" ? "Your store listing is now live!" : `Listing rejected: ${reason || "Does not meet guidelines"}` },
+      });
+      if (notifError) throw notifError;
+
+      toast.success(`Listing ${action}d`);
+      await Promise.all([loadStoreQueue(), loadStats()]);
+    } catch (err: any) {
+      console.error("Store listing update failed:", err);
+      toast.error(`Listing update failed: ${err.message || 'Operation aborted'}`);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function toggleFeatureFlag(id: string, currentValue: boolean) {
-    await sb.from("feature_flags").update({ value: !currentValue }).eq("id", id);
-    setFeatureFlags(prev => prev.map(f => f.id === id ? { ...f, value: !currentValue } : f));
-    toast.success("Feature flag updated");
+    try {
+      const { error } = await sb.from("feature_flags").update({ value: !currentValue }).eq("id", id);
+      if (error) throw error;
+      setFeatureFlags(prev => prev.map(f => f.id === id ? { ...f, value: !currentValue } : f));
+      toast.success("Feature flag updated");
+    } catch (err: any) {
+      console.error("Feature flag update failed:", err);
+      toast.error(`Update failed: ${err.message || 'System error'}`);
+    }
   }
 
   async function handleUserAction(userId: string, action: string) {
-    if (action === "ban") {
-      await sb.from("users").update({ is_banned: true, ban_reason: "Banned by admin" }).eq("id", userId);
-      toast.success("User banned");
-    } else if (action === "unban") {
-      await sb.from("users").update({ is_banned: false, ban_reason: null }).eq("id", userId);
-      toast.success("User unbanned");
-    } else if (action === "make_admin") {
-      await sb.from("users").update({ role: "admin" }).eq("id", userId);
-      toast.success("User promoted to admin");
-    } else if (action === "make_mod") {
-      await sb.from("users").update({ role: "moderator" }).eq("id", userId);
-      toast.success("User promoted to moderator");
-    } else if (action === "make_member") {
-      await sb.from("users").update({ role: "member" }).eq("id", userId);
-      toast.success("User demoted to member");
+    try {
+      let updatedFields: any = {};
+      let successMsg = "";
+
+      if (action === "ban") {
+        updatedFields = { is_banned: true, ban_reason: "Banned by admin" };
+        successMsg = "User banned";
+      } else if (action === "unban") {
+        updatedFields = { is_banned: false, ban_reason: null };
+        successMsg = "User unbanned";
+      } else if (action === "make_admin") {
+        updatedFields = { role: "admin" };
+        successMsg = "User promoted to admin";
+      } else if (action === "make_mod") {
+        updatedFields = { role: "moderator" };
+        successMsg = "User promoted to moderator";
+      } else if (action === "make_member") {
+        updatedFields = { role: "member" };
+        successMsg = "User demoted to member";
+      }
+
+      const { error } = await sb.from("users").update(updatedFields).eq("id", userId);
+      if (error) throw error;
+
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updatedFields } : u));
+      toast.success(successMsg);
+    } catch (err: any) {
+      console.error("User action failed:", err);
+      toast.error(`Action failed: ${err.message || 'Transmission compromised'}`);
     }
-    const { data: updated } = await sb.from("users").select("*").order("created_at", { ascending: false }).limit(50);
-    setUsers(updated || []);
   }
 
   const filteredUsers = users.filter(u =>
@@ -335,7 +397,7 @@ export default function AdminClient({
                 <RefreshCw size={14} />
               </button>
             </div>
-            {loading && <div className="flex justify-center py-10"><Loader2 size={20} className="text-accent animate-spin" /></div>}
+            {devRequestsLoading && <div className="flex justify-center py-10"><Loader2 size={20} className="text-accent animate-spin" /></div>}
             <div className="space-y-3">
               {devRequests.filter(r => r.status === "pending").map((req: any) => (
                 <motion.div key={req.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
@@ -370,7 +432,7 @@ export default function AdminClient({
                   </div>
                 </motion.div>
               ))}
-              {devRequests.filter(r => r.status === "pending").length === 0 && !loading && (
+              {devRequests.filter(r => r.status === "pending").length === 0 && !devRequestsLoading && (
                 <div className="text-center py-16">
                   <CheckCircle size={30} className="mx-auto text-neon-green mb-3" />
                   <p className="text-sm font-bold text-zinc-600">All caught up! No pending requests.</p>
@@ -389,7 +451,7 @@ export default function AdminClient({
                 <RefreshCw size={14} />
               </button>
             </div>
-            {loading && <div className="flex justify-center py-10"><Loader2 size={20} className="text-accent animate-spin" /></div>}
+            {storeQueueLoading && <div className="flex justify-center py-10"><Loader2 size={20} className="text-accent animate-spin" /></div>}
             <div className="space-y-3">
               {storeQueue.map((listing: any) => (
                 <motion.div key={listing.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
@@ -417,7 +479,7 @@ export default function AdminClient({
                   </div>
                 </motion.div>
               ))}
-              {storeQueue.length === 0 && !loading && (
+              {storeQueue.length === 0 && !storeQueueLoading && (
                 <div className="text-center py-16">
                   <Package size={30} className="mx-auto text-zinc-700 mb-3" />
                   <p className="text-sm font-bold text-zinc-600">No pending submissions.</p>
@@ -443,9 +505,15 @@ export default function AdminClient({
                     </div>
                     <div className="flex gap-2">
                       <button onClick={async () => {
-                        await sb.from("reports").update({ status: "dismissed" }).eq("id", r.id);
-                        setReports(prev => prev.filter(x => x.id !== r.id));
-                        toast.success("Report dismissed");
+                        try {
+                          const { error } = await sb.from("reports").update({ status: "dismissed" }).eq("id", r.id);
+                          if (error) throw error;
+                          setReports(prev => prev.filter(x => x.id !== r.id));
+                          toast.success("Report dismissed");
+                        } catch (err: any) {
+                          console.error("Failed to dismiss report:", err);
+                          toast.error(`Dismissal failed: ${err.message || 'System error'}`);
+                        }
                       }} className="px-3 py-1.5 rounded-lg bg-white/5 text-xs text-zinc-500 hover:bg-white/10 cursor-pointer">Dismiss</button>
                     </div>
                   </div>
@@ -505,15 +573,24 @@ function AnnouncementForm({ sb }: { sb: any }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    await sb.from("announcements").insert({
-      title, body, type,
-      start_at: new Date().toISOString(),
-      end_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      is_dismissible: true,
-    });
-    toast.success("Announcement created!");
-    setTitle(""); setBody("");
-    setSaving(false);
+    try {
+      const { error } = await sb.from("announcements").insert({
+        title, body, type,
+        start_at: new Date().toISOString(),
+        end_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        is_dismissible: true,
+      });
+      if (error) throw error;
+
+      toast.success("Announcement created!");
+      setTitle(""); 
+      setBody("");
+    } catch (err: any) {
+      console.error("Announcement creation failed:", err);
+      toast.error(`Transmission failed: ${err.message || 'Unknown protocol error'}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

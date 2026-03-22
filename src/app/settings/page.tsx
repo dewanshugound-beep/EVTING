@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useUser } from "@/lib/auth-hooks";
 import { createBrowserSupabase } from "@/lib/supabase";
+import Link from "next/link";
 
 const SECTIONS = [
   { id: "profile", label: "Profile", icon: User },
@@ -224,7 +225,13 @@ export default function SettingsPage() {
               <h2 className="text-lg font-black text-white">Privacy & Security</h2>
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 text-sm text-zinc-400 space-y-3">
                 <p className="font-bold text-zinc-300">Password & 2FA</p>
-                <p>To change your password, sign out and use the "Forgot Password" link on the login page. 2FA can be enabled from your security settings after verifying your email.</p>
+                <p>Security protocols and authentication layers are managed via our identity provider.</p>
+                <Link 
+                  href="/profile" 
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent/10 text-accent text-xs font-bold hover:bg-accent/20 transition-all"
+                >
+                  <Lock size={12} /> Manage Security & Password
+                </Link>
               </div>
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-3">
                 <p className="text-sm font-bold text-white">Profile Visibility</p>

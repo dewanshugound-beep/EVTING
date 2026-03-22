@@ -68,7 +68,7 @@ export default function Sidebar() {
       {/* Logo */}
       <Link href="/" className="relative group">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-neon-blue via-neon-purple to-neon-green text-[10px] font-black text-white shadow-lg shadow-neon-blue/25 transition-transform group-hover:scale-110">
-          MX
+          EH
         </div>
         <motion.div
           className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-neon-green shadow-[0_0_10px_rgba(57,211,83,0.8)]"

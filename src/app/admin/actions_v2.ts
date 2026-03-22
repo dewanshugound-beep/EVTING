@@ -295,10 +295,10 @@ export async function reportContent(
 
   await sb().from("reports").insert({
     reporter_id: user.id,
-    content_type: targetType,
-    content_id: targetId,
+    target_type: targetType,
+    target_id: targetId,
     reason,
-    status: "pending",
+    status: "open",
   });
 
   return { success: true };

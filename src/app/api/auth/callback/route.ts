@@ -7,7 +7,10 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
   const origin = requestUrl.origin;
-  const next = requestUrl.searchParams.get("next") || "/feed";
+  let next = requestUrl.searchParams.get("next") || "/feed";
+  if (next.startsWith("http://") || next.startsWith("https://") || !next.startsWith("/")) {
+    next = "/feed";
+  }
 
   if (code) {
     const cookieStore = await cookies();

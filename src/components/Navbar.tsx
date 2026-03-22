@@ -29,11 +29,17 @@ export default function Navbar() {
   }, []);
 
   const signOut = async () => {
-    const supabase = createBrowserSupabase();
-    await supabase.auth.signOut();
-    toast.success("Signed out");
-    router.push("/");
-    router.refresh();
+    try {
+      const supabase = createBrowserSupabase();
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      toast.success("Signed out");
+      router.push("/");
+      router.refresh();
+    } catch (err: any) {
+      console.error("Sign out failed:", err);
+      toast.error(`Sign out error: ${err.message || 'Transmission interrupted'}`);
+    }
   };
 
   return (
@@ -41,7 +47,7 @@ export default function Navbar() {
       {/* Left — Brand */}
       <div className="flex items-center gap-3">
         <span className="text-sm font-black uppercase tracking-[0.15em] text-zinc-100">
-          Matrix<span className="text-accent">IN</span>
+          EVTING<span className="text-accent"> HUB</span>
         </span>
         <span className="h-4 w-px bg-zinc-800" />
       </div>
@@ -110,7 +116,7 @@ export default function Navbar() {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-12 w-52 rounded-2xl bg-zinc-900/95 backdrop-blur-xl border border-white/8 shadow-2xl shadow-black/60 overflow-hidden z-50"
+                  className="absolute right-0 top-12 w-52 rounded-2xl bg-zinc-900/95 backdrop-blur-xl border border-white/[0.08] shadow-2xl shadow-black/60 overflow-hidden z-50"
                 >
                   {/* User info */}
                   <div className="px-4 py-3 border-b border-white/5">
@@ -127,7 +133,7 @@ export default function Navbar() {
                   {/* Menu items */}
                   <div className="py-1">
                     {[
-                      { href: `/u/${user?.username}`, icon: User, label: "Profile" },
+                      { href: user?.username ? `/u/${user.username}` : "/feed", icon: User, label: "Profile" },
                       { href: "/settings", icon: Settings, label: "Settings" },
                     ].map(({ href, icon: Icon, label }) => (
                       <Link

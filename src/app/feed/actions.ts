@@ -75,10 +75,10 @@ export async function createPost(data: {
     }
   }
 
-  // Check for @mentions and notify users
+  // Check for @mentions and notify users (capped at 5 to prevent spam)
   const mentions = data.content.match(/@(\w+)/g);
   if (mentions) {
-    const usernames = [...new Set(mentions.map((m) => m.substring(1)))];
+    const usernames = [...new Set(mentions.map((m) => m.substring(1)))].slice(0, 5);
     if (usernames.length > 0) {
       const { data: mentionedUsers } = await sb()
         .from("users")
@@ -86,6 +86,7 @@ export async function createPost(data: {
         .in("username", usernames);
 
       if (mentionedUsers && mentionedUsers.length > 0) {
+        // Atomic notification delivery for first 5 unique mentions
         for (const mu of mentionedUsers) {
           if (mu.id !== user.id) {
             await createNotification(mu.id, "mention", {

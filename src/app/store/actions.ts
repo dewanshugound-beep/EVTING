@@ -51,7 +51,7 @@ export async function getStoreListings(options?: {
 
   // Search
   if (options?.search) {
-    query = query.or(`title.ilike.%${options.search}%,description.ilike.%${options.search}%`);
+    query = query.or(`title.ilike.%${options.search}%,description_md.ilike.%${options.search}%`);
   }
 
   // Sort
@@ -126,7 +126,8 @@ export async function createStoreListing(formData: FormData) {
       user_id: user.id,
       title,
       slug,
-      description,
+      tagline: description.substring(0, 100), // Use first 100 chars of description as tagline
+      description_md: description,
       readme_md,
       version,
       category,
@@ -229,7 +230,7 @@ export async function addStoreReview(listingId: string, body: string, rating: nu
   if (rating < 1 || rating > 5) return { error: "Rating must be 1-5" };
 
   const { data, error } = await sb()
-    .from("store_reviews")
+    .from("reviews")
     .insert({ user_id: user.id, listing_id: listingId, body, rating })
     .select("*, users(display_name, avatar_url, username)")
     .single();
@@ -250,7 +251,7 @@ export async function addStoreReview(listingId: string, body: string, rating: nu
 /* ═══════════════════════════════════════════ */
 export async function getStoreReviews(listingId: string) {
   const { data } = await sb()
-    .from("store_reviews")
+    .from("reviews")
     .select("*, users(display_name, avatar_url, username)")
     .eq("listing_id", listingId)
     .order("created_at", { ascending: false });

@@ -48,27 +48,33 @@ export default function LoginPage() {
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading("magic");
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${window.location.origin}/feed` },
-    });
-    if (error) {
-      toast.error(error.message);
-    } else {
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: `${window.location.origin}/api/auth/callback?next=/feed` },
+      });
+      if (error) throw error;
       setMagicSent(true);
       toast.success("Magic link sent! Check your inbox.");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to send link");
+    } finally {
+      setLoading(null);
     }
-    setLoading(null);
   };
 
   const handleOAuth = async (provider: "github" | "google" | "discord" | "twitter") => {
     setLoading(provider);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: `${window.location.origin}/api/auth/callback` },
-    });
-    if (error) toast.error(error.message);
-    setLoading(null);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      toast.error(err.message || "OAuth transition failed");
+      setLoading(null);
+    }
   };
 
   return (
@@ -89,13 +95,13 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <Link href="/" className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 via-violet-600 to-emerald-500 shadow-[0_0_40px_rgba(88,166,255,0.3)] mb-4">
-            <span className="text-xl font-black text-white tracking-tighter">MX</span>
+            <span className="text-xl font-black text-white tracking-tighter">EH</span>
           </Link>
           <h1 className="text-2xl font-black text-white tracking-tight">Welcome back</h1>
-          <p className="text-zinc-500 text-sm mt-1">Sign in to MatrixIN</p>
+          <p className="text-zinc-500 text-sm mt-1">Sign in to EVTING HUB</p>
         </div>
 
-        <div className="rounded-2xl border border-white/8 bg-black/50 backdrop-blur-2xl p-6 shadow-2xl shadow-black/60">
+        <div className="rounded-2xl border border-white/[0.08] bg-black/50 backdrop-blur-2xl p-6 shadow-2xl shadow-black/60">
           {/* OAuth providers */}
           <div className="grid grid-cols-2 gap-2 mb-5">
             <OAuthButton
@@ -174,7 +180,7 @@ export default function LoginPage() {
                     <input
                       type="email" value={email} onChange={e => setEmail(e.target.value)}
                       required placeholder="you@example.com"
-                      className="w-full h-10 pl-9 pr-4 rounded-xl bg-white/5 border border-white/8 text-sm text-white placeholder:text-zinc-700 outline-none focus:border-accent/50 focus:bg-white/8 transition-all"
+                      className="w-full h-10 pl-9 pr-4 rounded-xl bg-white/5 border border-white/[0.08] text-sm text-white placeholder:text-zinc-700 outline-none focus:border-accent/50 focus:bg-white/8 transition-all"
                     />
                   </div>
                 </div>
@@ -186,7 +192,7 @@ export default function LoginPage() {
                       type={showPass ? "text" : "password"} value={password}
                       onChange={e => setPassword(e.target.value)}
                       required placeholder="••••••••"
-                      className="w-full h-10 pl-9 pr-10 rounded-xl bg-white/5 border border-white/8 text-sm text-white placeholder:text-zinc-700 outline-none focus:border-accent/50 focus:bg-white/8 transition-all"
+                      className="w-full h-10 pl-9 pr-10 rounded-xl bg-white/5 border border-white/[0.08] text-sm text-white placeholder:text-zinc-700 outline-none focus:border-accent/50 focus:bg-white/8 transition-all"
                     />
                     <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400 cursor-pointer">
                       {showPass ? <EyeOff size={14} /> : <Eye size={14} />}
@@ -210,7 +216,7 @@ export default function LoginPage() {
                     <input
                       type="email" value={email} onChange={e => setEmail(e.target.value)}
                       required placeholder="you@example.com"
-                      className="w-full h-10 pl-9 pr-4 rounded-xl bg-white/5 border border-white/8 text-sm text-white placeholder:text-zinc-700 outline-none focus:border-accent/50 focus:bg-white/8 transition-all"
+                      className="w-full h-10 pl-9 pr-4 rounded-xl bg-white/5 border border-white/[0.08] text-sm text-white placeholder:text-zinc-700 outline-none focus:border-accent/50 focus:bg-white/8 transition-all"
                     />
                   </div>
                 </div>
@@ -242,7 +248,7 @@ function OAuthButton({ icon, label, onClick, loading }: { icon: React.ReactNode;
     <motion.button
       onClick={onClick} disabled={loading}
       whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-      className="flex items-center justify-center gap-2 h-10 rounded-xl bg-white/5 border border-white/8 text-sm text-zinc-300 font-medium hover:bg-white/10 hover:border-white/15 transition-all cursor-pointer disabled:opacity-50"
+      className="flex items-center justify-center gap-2 h-10 rounded-xl bg-white/5 border border-white/[0.08] text-sm text-zinc-300 font-medium hover:bg-white/10 hover:border-white/15 transition-all cursor-pointer disabled:opacity-50"
     >
       {loading ? <Loader2 size={14} className="animate-spin" /> : icon}
       <span className="text-[12px]">{label}</span>

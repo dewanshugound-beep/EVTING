@@ -23,58 +23,62 @@ export default function DashboardPage() {
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const loadDashboard = React.useCallback(async () => {
+    if (!user) return;
+    try {
+      const sb = createBrowserSupabase();
+      const results = await Promise.all([
+        sb.from("posts").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+        sb.from("follows").select("*", { count: "exact", head: true }).eq("following_id", user.id),
+        sb.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", user.id),
+        sb.from("posts").select("id, content, like_count, comment_count, created_at").eq("user_id", user.id)
+          .order("created_at", { ascending: false }).limit(5),
+        sb.from("store_listings").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
+        sb.from("users").select("xp, level, reputation").eq("id", user.id).single(),
+      ]);
+
+      const [postCount, followerCount, followingCount, postsRes, listingsRes, userRes] = results;
+
+      const postsData = postsRes.data || [];
+      const listingsData = listingsRes.data || [];
+      const userData = userRes.data;
+
+      const totalLikes = postsData.reduce((s: number, p: any) => s + (p.like_count || 0), 0);
+      const totalDownloads = listingsData.reduce((s: number, l: any) => s + (l.download_count || 0), 0);
+      const totalStars = listingsData.reduce((s: number, l: any) => s + (l.star_count || 0), 0);
+
+      setStats({
+        totalPosts: postCount.count || 0,
+        totalLikes,
+        totalFollowers: followerCount.count || 0,
+        totalFollowing: followingCount.count || 0,
+        totalListings: listingsData.length || 0,
+        totalDownloads,
+        totalStars,
+        totalViews: 0,
+        xp: (userData as any)?.xp || user.xp || 0,
+        level: (userData as any)?.level || user.level || 1,
+        reputation: (userData as any)?.reputation || user.reputation || 0,
+      });
+      setRecentPosts(postsData);
+      setListings(listingsData);
+    } catch (err) {
+      console.error("Dashboard synchronization failure:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (!isLoaded) return;
     if (!user) { router.push("/login"); return; }
     loadDashboard();
-  }, [user, isLoaded]);
-
-  async function loadDashboard() {
-    if (!user) return;
-    const sb = createBrowserSupabase();
-    const [
-      { count: postCount },
-      { count: followerCount },
-      { count: followingCount },
-      { data: postsData },
-      { data: listingsData },
-      { data: userData },
-    ] = await Promise.all([
-      sb.from("posts").select("*", { count: "exact", head: true }).eq("user_id", user.id),
-      sb.from("follows").select("*", { count: "exact", head: true }).eq("following_id", user.id),
-      sb.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", user.id),
-      sb.from("posts").select("id, content, like_count, comment_count, created_at").eq("user_id", user.id)
-        .order("created_at", { ascending: false }).limit(5),
-      sb.from("store_listings").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
-      sb.from("users").select("xp, level, reputation").eq("id", user.id).single(),
-    ]);
-
-    const totalLikes = (postsData || []).reduce((s: number, p: any) => s + (p.like_count || 0), 0);
-    const totalDownloads = (listingsData || []).reduce((s: number, l: any) => s + (l.download_count || 0), 0);
-    const totalStars = (listingsData || []).reduce((s: number, l: any) => s + (l.star_count || 0), 0);
-
-    setStats({
-      totalPosts: postCount || 0,
-      totalLikes,
-      totalFollowers: followerCount || 0,
-      totalFollowing: followingCount || 0,
-      totalListings: listingsData?.length || 0,
-      totalDownloads,
-      totalStars,
-      totalViews: 0,
-      xp: (userData as any)?.xp || user.xp || 0,
-      level: (userData as any)?.level || user.level || 1,
-      reputation: (userData as any)?.reputation || user.reputation || 0,
-    });
-    setRecentPosts(postsData || []);
-    setListings(listingsData || []);
-    setLoading(false);
-  }
+  }, [user, isLoaded, router, loadDashboard]);
 
   if (loading) return <div className="flex justify-center py-20"><Loader2 size={24} className="animate-spin text-accent" /></div>;
 
-  const xpToNextLevel = stats.level * 500;
-  const xpProgress = (stats.xp % xpToNextLevel) / xpToNextLevel * 100;
+  const xpToNextLevel = Math.max(stats.level, 1) * 500;
+  const xpProgress = xpToNextLevel > 0 ? (stats.xp % xpToNextLevel) / xpToNextLevel * 100 : 0;
 
   return (
     <div className="min-h-screen max-w-5xl mx-auto px-6 py-8">
@@ -153,7 +157,7 @@ export default function DashboardPage() {
         {[
           { label: "Write Post", href: "/feed", icon: MessageCircle, color: "bg-accent/10 text-accent border-accent/20" },
           { label: "Upload Tool", href: "/store/upload", icon: Zap, color: "bg-neon-green/10 text-neon-green border-neon-green/20" },
-          { label: "My Profile", href: `/u/${user?.username}`, icon: Users, color: "bg-neon-purple/10 text-neon-purple border-neon-purple/20" },
+          { label: "My Profile", href: user?.username ? `/u/${user.username}` : "/feed", icon: Users, color: "bg-neon-purple/10 text-neon-purple border-neon-purple/20" },
         ].map(({ label, href, icon: Icon, color }) => (
           <Link key={label} href={href}
             className={`flex items-center gap-2 p-4 rounded-2xl border transition-all hover:scale-[1.02] ${color}`}>
@@ -177,7 +181,9 @@ export default function DashboardPage() {
               recentPosts.map(post => (
                 <Link key={post.id} href={`/post/${post.id}`}
                   className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-all">
-                  <p className="text-xs text-zinc-400 truncate flex-1">{post.content?.slice(0, 60)}...</p>
+                  <p className="text-xs text-zinc-400 truncate flex-1">
+                    {post.content ? (post.content.length > 60 ? post.content.slice(0, 60) + "..." : post.content) : "No content"}
+                  </p>
                   <div className="flex items-center gap-3 shrink-0 ml-3">
                     <span className="flex items-center gap-0.5 text-[10px] text-zinc-600"><Heart size={10} />{post.like_count || 0}</span>
                     <span className="flex items-center gap-0.5 text-[10px] text-zinc-600"><MessageCircle size={10} />{post.comment_count || 0}</span>

@@ -78,7 +78,7 @@ function StoreCard({ listing }: { listing: any }) {
         </div>
 
         <h3 className="text-base font-bold text-white mb-1.5 group-hover:text-accent transition-colors tracking-tight">{listing.title}</h3>
-        <p className="text-[11px] text-zinc-500 leading-relaxed mb-4 line-clamp-2 flex-grow">{listing.description}</p>
+        <p className="text-[11px] text-zinc-500 leading-relaxed mb-4 line-clamp-2 flex-grow">{listing.tagline || listing.description}</p>
 
         <div className="flex flex-wrap gap-1.5 mb-4">
           {(listing.tags || []).slice(0, 3).map((tag: string) => (

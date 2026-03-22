@@ -21,8 +21,16 @@ export default function BookmarksPage() {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(50)
-      .then(({ data }) => {
-        setPosts((data || []).map((b: any) => b.posts).filter(Boolean));
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Failed to fetch bookmarks:", error);
+        } else {
+          setPosts((data || []).map((b: any) => b.posts).filter(Boolean));
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Unexpected bookmarks error:", err);
         setLoading(false);
       });
   }, [user?.id]);
@@ -53,19 +61,19 @@ export default function BookmarksPage() {
             <motion.div key={post.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
               className="py-4">
               <div className="flex gap-3">
-                <Link href={`/u/${post.users?.username}`} className="shrink-0">
+                <Link href={post.users?.username ? `/u/${post.users.username}` : "/feed"} className="shrink-0">
                   <div className="h-10 w-10 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-800 border border-white/10 flex items-center justify-center text-sm font-bold text-zinc-400 overflow-hidden relative">
                     {post.users?.avatar_url ? (
                       <Image src={post.users.avatar_url} alt="" fill className="object-cover" />
                     ) : (
-                      (post.users?.display_name || "U")[0].toUpperCase()
+                      (post.users?.display_name || post.users?.username || "U")[0].toUpperCase()
                     )}
                   </div>
                 </Link>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-bold text-white">{post.users?.display_name}</span>
-                    <span className="text-[11px] text-zinc-600">@{post.users?.username}</span>
+                    <span className="text-sm font-bold text-white">{post.users?.display_name || post.users?.username || "Ghost User"}</span>
+                    {post.users?.username && <span className="text-[11px] text-zinc-600">@{post.users.username}</span>}
                     <span className="text-[11px] text-zinc-700">·</span>
                     <span className="text-[11px] text-zinc-700">{new Date(post.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
                   </div>

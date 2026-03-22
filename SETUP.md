@@ -1,8 +1,8 @@
-# MatrixIN — Apply Schema to Supabase
+# EVTING HUB — Apply Schema to Supabase
 
 ## Step 1: Open the Supabase SQL Editor
 
-1. Go to: https://supabase.com/dashboard/project/mgmbbhfjawxlhfssnrbt/sql/new
+1. Go to: https://supabase.com/dashboard/project/{project-id}/sql/new
 2. Log in if prompted
 
 ## Step 2: Copy and Paste
@@ -25,7 +25,7 @@ a user profile row when someone signs up via Supabase Auth.
 
 ## Step 4: Set OAuth Providers (Supabase Dashboard)
 
-Go to: https://supabase.com/dashboard/project/mgmbbhfjawxlhfssnrbt/auth/providers
+Go to: https://supabase.com/dashboard/project/{project-id}/auth/providers
 
 Enable and configure:
 - **GitHub** → Add Client ID + Secret from github.com/settings/developers
