@@ -124,7 +124,7 @@ const HomeHero = React.memo(() => {
           className="inline-flex items-center gap-2 px-4 py-1.5 mb-8 rounded-full border border-accent/30 bg-accent/5 text-accent text-[10px] font-bold tracking-widest uppercase"
         >
           <Zap size={12} className="animate-pulse" />
-          THE DEVELOPER PLATFORM — LIVE
+          THE DEVELOPER PLATFORM
         </motion.div>
 
         {/* Headline */}

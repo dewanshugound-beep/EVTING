@@ -44,10 +44,6 @@ export default function Navbar() {
           Matrix<span className="text-accent">IN</span>
         </span>
         <span className="h-4 w-px bg-zinc-800" />
-        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-neon-green/20 bg-neon-green/5 text-neon-green text-[9px] font-bold tracking-widest">
-          <Activity size={9} className="animate-pulse" />
-          LIVE
-        </div>
       </div>
 
       {/* Center — Search */}
