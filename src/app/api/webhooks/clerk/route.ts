@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const sb = createServerSupabase();
+  const sb = await createServerSupabase();
 
   console.log(`Clerk Webhook Event: ${evt.type}`);
 

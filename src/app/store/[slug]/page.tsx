@@ -4,7 +4,7 @@ import StoreDetailClient from "./StoreDetailClient";
 
 export default async function StoreDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const sb = createServerSupabase();
+  const sb = await createServerSupabase();
 
   const { data: listing } = await sb
     .from("store_listings")

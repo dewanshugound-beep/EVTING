@@ -1,8 +1,7 @@
-
-import { createServerSupabase } from "../src/lib/supabase";
+import { createServerSupabase } from "../src/lib/supabase-server";
 
 async function checkUser() {
-  const sb = createServerSupabase();
+  const sb = await createServerSupabase();
   const { data, error } = await sb
     .from("users")
     .select("*")

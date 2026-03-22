@@ -4,13 +4,13 @@ import { createServerSupabase } from "@/lib/supabase-server";
 import { requireAuth, getDbUser } from "@/lib/actions";
 import { revalidatePath } from "next/cache";
 
-const sb = () => createServerSupabase();
+// Using await createServerSupabase() directly in functions for async safety
 
 export async function getReports() {
   const user = await getDbUser();
   if (!user || user.role !== "admin") throw new Error("Unauthorized access.");
 
-  const { data } = await sb()
+  const { data } = await (await createServerSupabase())
     .from("reports")
     .select("*, users!reporter_id(display_name, username)")
     .order("created_at", { ascending: false });
@@ -21,7 +21,7 @@ export async function dismissReport(reportId: string) {
   const user = await getDbUser();
   if (!user || user.role !== "admin") throw new Error("Unauthorized access.");
 
-  const { error } = await sb()
+  const { error } = await (await createServerSupabase())
     .from("reports")
     .update({ status: "dismissed" })
     .eq("id", reportId);
@@ -35,7 +35,7 @@ export async function resolveReport(reportId: string, contentId: string, content
   const user = await getDbUser();
   if (!user || user.role !== "admin") throw new Error("Unauthorized access.");
 
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
 
   // 1. Delete the content
   const table = contentType === "message" ? "messages" : "projects_vault";

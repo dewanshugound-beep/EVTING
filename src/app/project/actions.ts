@@ -4,14 +4,14 @@ import { createServerSupabase } from "@/lib/supabase-server";
 import { requireAuth, slugify } from "@/lib/actions";
 import { getRank, XP_REWARDS } from "@/lib/rank";
 
-const sb = () => createServerSupabase();
+// Using await createServerSupabase() directly in functions for async safety
 
 const FREE_PROJECT_LIMIT = 2;
 
 /* ─── Create Project ─── */
 export async function createProject(formData: FormData) {
   const user = await requireAuth();
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
 
   // Check user role + project count
   const { data: dbUser } = await supabase
@@ -80,7 +80,7 @@ export async function createProject(formData: FormData) {
 /* ─── Update Project ─── */
 export async function updateProject(projectId: string, formData: FormData) {
   const user = await requireAuth();
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
 
   // Verify ownership
   const { data: project } = await supabase

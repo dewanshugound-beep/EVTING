@@ -5,7 +5,7 @@ import { requireAuth, getDbUser, slugify } from "@/lib/actions";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/app/feed/actions";
 
-const sb = () => createServerSupabase();
+// Using direct await createServerSupabase() inside functions for thread safety with Next.js 15 async cookies
 
 /* ─── Role Helpers ─── */
 async function requireDev() {
@@ -35,7 +35,7 @@ export async function getStoreListings(options?: {
   cursor?: string;
   status?: string;
 }) {
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
   const limit = options?.limit || 20;
 
   let query = supabase
@@ -85,7 +85,7 @@ export async function getStoreListings(options?: {
 /*  GET SINGLE LISTING                         */
 /* ═══════════════════════════════════════════ */
 export async function getStoreListing(slug: string) {
-  const { data } = await sb()
+  const { data } = await (await createServerSupabase())
     .from("store_listings")
     .select("*, users(id, display_name, avatar_url, username, role)")
     .eq("slug", slug)
@@ -120,7 +120,7 @@ export async function createStoreListing(formData: FormData) {
     try { screenshots = JSON.parse(screenshotsRaw); } catch {}
   }
 
-  const { data, error } = await sb()
+  const { data, error } = await (await createServerSupabase())
     .from("store_listings")
     .insert({
       user_id: user.id,
@@ -155,7 +155,7 @@ export async function toggleListingStar(listingId: string) {
   const user = await getDbUser();
   if (!user) throw new Error("Unauthorized");
 
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
 
   const { data: existing } = await supabase
     .from("store_stars")
@@ -190,7 +190,7 @@ export async function toggleListingStar(listingId: string) {
 /*  CHECK IF USER STARRED                      */
 /* ═══════════════════════════════════════════ */
 export async function hasStarredListing(userId: string, listingId: string) {
-  const { data } = await sb()
+  const { data } = await (await createServerSupabase())
     .from("store_stars")
     .select("id")
     .eq("user_id", userId)
@@ -204,7 +204,7 @@ export async function hasStarredListing(userId: string, listingId: string) {
 /* ═══════════════════════════════════════════ */
 export async function recordDownload(listingId: string) {
   const user = await getDbUser();
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
 
   await supabase.from("store_downloads").insert({
     user_id: user?.id || null,
@@ -229,7 +229,7 @@ export async function addStoreReview(listingId: string, body: string, rating: nu
   if (!user) throw new Error("Unauthorized");
   if (rating < 1 || rating > 5) return { error: "Rating must be 1-5" };
 
-  const { data, error } = await sb()
+  const { data, error } = await (await createServerSupabase())
     .from("reviews")
     .insert({ user_id: user.id, listing_id: listingId, body, rating })
     .select("*, users(display_name, avatar_url, username)")
@@ -241,7 +241,7 @@ export async function addStoreReview(listingId: string, body: string, rating: nu
   }
 
   // Recalculate average rating
-  await sb().rpc("recalc_listing_rating", { listing_id_param: listingId });
+  await (await createServerSupabase()).rpc("recalc_listing_rating", { listing_id_param: listingId });
 
   return { success: true, review: data };
 }
@@ -250,7 +250,7 @@ export async function addStoreReview(listingId: string, body: string, rating: nu
 /*  GET REVIEWS                                */
 /* ═══════════════════════════════════════════ */
 export async function getStoreReviews(listingId: string) {
-  const { data } = await sb()
+  const { data } = await (await createServerSupabase())
     .from("reviews")
     .select("*, users(display_name, avatar_url, username)")
     .eq("listing_id", listingId)
@@ -265,7 +265,7 @@ export async function reportListing(listingId: string, reason: string) {
   const user = await getDbUser();
   if (!user) throw new Error("Unauthorized");
 
-  await sb().from("reports").insert({
+  await (await createServerSupabase()).from("reports").insert({
     reporter_id: user.id,
     content_id: listingId,
     content_type: "listing",
@@ -282,10 +282,10 @@ export async function reportListing(listingId: string, reason: string) {
 export async function approveStoreListing(listingId: string) {
   const admin = await requireAdmin();
 
-  await sb().from("store_listings").update({ status: "approved" }).eq("id", listingId);
+  await (await createServerSupabase()).from("store_listings").update({ status: "approved" }).eq("id", listingId);
 
   // Notify the author
-  const { data: listing } = await sb().from("store_listings").select("user_id, title").eq("id", listingId).single();
+  const { data: listing } = await (await createServerSupabase()).from("store_listings").select("user_id, title").eq("id", listingId).single();
   if (listing) {
     await createNotification(listing.user_id, "listing_approved", {
       listing_id: listingId,
@@ -301,9 +301,9 @@ export async function approveStoreListing(listingId: string) {
 export async function rejectStoreListing(listingId: string, reason: string) {
   const admin = await requireAdmin();
 
-  await sb().from("store_listings").update({ status: "rejected", admin_note: reason }).eq("id", listingId);
+  await (await createServerSupabase()).from("store_listings").update({ status: "rejected", admin_note: reason }).eq("id", listingId);
 
-  const { data: listing } = await sb().from("store_listings").select("user_id, title").eq("id", listingId).single();
+  const { data: listing } = await (await createServerSupabase()).from("store_listings").select("user_id, title").eq("id", listingId).single();
   if (listing) {
     await createNotification(listing.user_id, "listing_rejected", {
       listing_id: listingId,
@@ -322,7 +322,7 @@ export async function rejectStoreListing(listingId: string, reason: string) {
 export async function getPendingListings() {
   const admin = await requireAdmin();
 
-  const { data } = await sb()
+  const { data } = await (await createServerSupabase())
     .from("store_listings")
     .select("*, users(id, display_name, username, avatar_url)")
     .eq("status", "pending")
@@ -334,7 +334,7 @@ export async function getPendingListings() {
 /*  GET USER'S LISTINGS (for profile)          */
 /* ═══════════════════════════════════════════ */
 export async function getUserListings(userId: string) {
-  const { data } = await sb()
+  const { data } = await (await createServerSupabase())
     .from("store_listings")
     .select("*")
     .eq("user_id", userId)

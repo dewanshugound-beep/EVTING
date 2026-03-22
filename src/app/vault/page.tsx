@@ -12,7 +12,7 @@ export default async function VaultPage() {
     );
   }
 
-  const sb = createServerSupabase();
+  const sb = await createServerSupabase();
 
   // Get user's projects
   const { data: projects } = await sb

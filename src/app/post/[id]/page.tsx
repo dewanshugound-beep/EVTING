@@ -5,7 +5,7 @@ import { currentUser } from "@/lib/auth";
 
 export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const sb = createServerSupabase();
+  const sb = await createServerSupabase();
 
   const [{ data: post }, viewer] = await Promise.all([
     sb.from("posts")

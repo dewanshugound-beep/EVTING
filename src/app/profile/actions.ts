@@ -4,7 +4,7 @@ import { createServerSupabase } from "@/lib/supabase-server";
 import { requireAuth } from "@/lib/actions";
 import { getRank, XP_REWARDS } from "@/lib/rank";
 
-const sb = () => createServerSupabase();
+// Using await createServerSupabase() directly in functions for async safety
 
 /* ─── Profile Updates ─── */
 
@@ -15,7 +15,7 @@ export async function updateProfile(formData: FormData) {
   const display_name = formData.get("display_name") as string;
   const avatar_url = formData.get("avatar_url") as string;
 
-  const { error } = await sb()
+  const { error } = await (await createServerSupabase())
     .from("users")
     .update({
       display_name: display_name || null,
@@ -31,7 +31,7 @@ export async function updateProfile(formData: FormData) {
 
 export async function updateBanner(bannerUrl: string) {
   const user = await requireAuth();
-  await sb().from("users").update({ banner_url: bannerUrl }).eq("id", user.id);
+  await (await createServerSupabase()).from("users").update({ banner_url: bannerUrl }).eq("id", user.id);
   return { success: true };
 }
 
@@ -41,7 +41,7 @@ export async function followUser(targetId: string) {
   const user = await requireAuth();
   if (user.id === targetId) return { error: "Cannot follow yourself" };
 
-  const { error } = await sb()
+  const { error } = await (await createServerSupabase())
     .from("follows")
     .insert({ follower_id: user.id, following_id: targetId });
 
@@ -49,7 +49,7 @@ export async function followUser(targetId: string) {
   if (error) throw error;
 
   // Award XP to the followed user
-  await sb().rpc("increment_xp", {
+  await (await createServerSupabase()).rpc("increment_xp", {
     user_id_param: targetId,
     amount: XP_REWARDS.FOLLOWER_GAINED,
   });
@@ -59,7 +59,7 @@ export async function followUser(targetId: string) {
 
 export async function unfollowUser(targetId: string) {
   const user = await requireAuth();
-  await sb()
+  await (await createServerSupabase())
     .from("follows")
     .delete()
     .eq("follower_id", user.id)
@@ -70,7 +70,7 @@ export async function unfollowUser(targetId: string) {
 /* ─── Fetch Profile Data ─── */
 
 export async function getProfile(userId: string) {
-  const { data: profile } = await sb()
+  const { data: profile } = await (await createServerSupabase())
     .from("users")
     .select("*")
     .eq("id", userId)
@@ -80,9 +80,9 @@ export async function getProfile(userId: string) {
 
   // Get counts
   const [followers, following, projects] = await Promise.all([
-    sb().from("follows").select("*", { count: "exact", head: true }).eq("following_id", userId),
-    sb().from("follows").select("*", { count: "exact", head: true }).eq("follower_id", userId),
-    sb().from("projects").select("*").eq("user_id", userId).eq("is_published", true).order("created_at", { ascending: false }),
+    (await createServerSupabase()).from("follows").select("*", { count: "exact", head: true }).eq("following_id", userId),
+    (await createServerSupabase()).from("follows").select("*", { count: "exact", head: true }).eq("follower_id", userId),
+    (await createServerSupabase()).from("projects").select("*").eq("user_id", userId).eq("is_published", true).order("created_at", { ascending: false }),
   ]);
 
   // Compute rank

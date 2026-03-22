@@ -3,11 +3,11 @@
 import { createServerSupabase } from "@/lib/supabase-server";
 import { requireAuth } from "@/lib/actions";
 
-const sb = () => createServerSupabase();
+// Using await createServerSupabase() directly in functions for async safety
 
 /* ─── Get Channels ─── */
 export async function getChannels() {
-  const { data } = await sb()
+  const { data } = await (await createServerSupabase())
     .from("channels")
     .select("*")
     .order("created_at", { ascending: true });
@@ -16,7 +16,7 @@ export async function getChannels() {
 
 /* ─── Get Channel Messages ─── */
 export async function getMessages(channelId: string) {
-  const { data } = await sb()
+  const { data } = await (await createServerSupabase())
     .from("messages")
     .select("*, users(id, display_name, avatar_url, username)")
     .eq("channel_id", channelId)
@@ -30,7 +30,7 @@ export async function sendMessage(channelId: string, body: string) {
   const user = await requireAuth();
   if (!body?.trim()) return { error: "Empty message" };
 
-  const { data, error } = await sb()
+  const { data, error } = await (await createServerSupabase())
     .from("messages")
     .insert({ channel_id: channelId, user_id: user.id, body: body.trim() })
     .select("*, users(id, display_name, avatar_url, username)")
@@ -43,7 +43,7 @@ export async function sendMessage(channelId: string, body: string) {
 /* ─── Create DM Channel ─── */
 export async function createDM(targetUserId: string) {
   const user = await requireAuth();
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
 
   // Check if DM already exists
   const { data: existing } = await supabase
@@ -92,7 +92,7 @@ export async function createDM(targetUserId: string) {
 /* ─── Add Reaction ─── */
 export async function addReaction(messageId: string, emoji: string) {
   const user = await requireAuth();
-  const { error } = await sb()
+  const { error } = await (await createServerSupabase())
     .from("message_reactions")
     .insert({ message_id: messageId, user_id: user.id, emoji });
   if (error?.code === "23505") return { error: "Already reacted" };

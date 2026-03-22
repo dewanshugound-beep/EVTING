@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ users: [], projects: [] });
   }
 
-  const sb = createServerSupabase();
+  const sb = await createServerSupabase();
   const searchTerm = `%${q}%`;
 
   const [usersResult, projectsResult] = await Promise.all([

@@ -4,10 +4,10 @@ import { createServerSupabase } from "@/lib/supabase-server";
 import { requireAuth } from "@/lib/actions";
 import { revalidatePath } from "next/cache";
 
-const sb = () => createServerSupabase();
+// Using await createServerSupabase() directly in functions for async safety
 
 export async function getVaultProjects() {
-  const { data } = await sb()
+  const { data } = await (await createServerSupabase())
     .from("projects_vault")
     .select("*, users(id, display_name, avatar_url, username)")
     .order("created_at", { ascending: false });
@@ -26,7 +26,7 @@ export async function uploadVaultProject(formData: FormData) {
     throw new Error("Missing title or file signal.");
   }
 
-  const { data, error } = await sb()
+  const { data, error } = await (await createServerSupabase())
     .from("projects_vault")
     .insert({
       user_id: user.id,
@@ -47,7 +47,7 @@ export async function uploadVaultProject(formData: FormData) {
 export async function reportVaultContent(contentId: string, contentType: "message" | "project", reason: string) {
   const user = await requireAuth();
   
-  const { error } = await sb()
+  const { error } = await (await createServerSupabase())
     .from("reports")
     .insert({
       reporter_id: user.id,

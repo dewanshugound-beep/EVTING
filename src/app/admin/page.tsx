@@ -7,7 +7,7 @@ export default async function AdminPage() {
   const user = await currentUser();
   if (!user) redirect("/login");
 
-  const sb = createServerSupabase();
+  const sb = await createServerSupabase();
 
   // Verify admin role in DB
   const { data: dbUser } = await sb

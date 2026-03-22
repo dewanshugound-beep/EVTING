@@ -15,7 +15,7 @@ export async function requireAuth() {
  */
 export async function getDbUser() {
   const user = await requireAuth();
-  const sb = createServerSupabase();
+  const sb = await createServerSupabase();
   const { data } = await sb
     .from("users")
     .select("*")

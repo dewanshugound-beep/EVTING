@@ -4,7 +4,7 @@ import { createServerSupabase } from "@/lib/supabase-server";
 import { requireAuth, getDbUser } from "@/lib/actions";
 import { revalidatePath } from "next/cache";
 
-const sb = () => createServerSupabase();
+// Using await createServerSupabase() directly in functions for async safety
 
 /* ─── Role Helpers ─── */
 async function requireMember() {
@@ -39,7 +39,7 @@ export async function createPost(data: {
     pollJson = data.poll_options.map(text => ({ text, votes: 0 }));
   }
 
-  const { data: post, error } = await sb()
+  const { data: post, error } = await (await createServerSupabase())
     .from("posts")
     .insert({
       user_id: user.id,
@@ -58,14 +58,14 @@ export async function createPost(data: {
 
   // If it's a reply, increment parent's comment count
   if (data.parent_id) {
-    await sb().rpc("increment_post_comments", { post_id_param: data.parent_id });
+    await (await createServerSupabase()).rpc("increment_post_comments", { post_id_param: data.parent_id });
   }
 
   // If it's a repost, increment original's repost count
   if (data.repost_of) {
-    await sb().rpc("increment_post_reposts", { post_id_param: data.repost_of });
+    await (await createServerSupabase()).rpc("increment_post_reposts", { post_id_param: data.repost_of });
     // Notify original author
-    const { data: original } = await sb().from("posts").select("user_id").eq("id", data.repost_of).single();
+    const { data: original } = await (await createServerSupabase()).from("posts").select("user_id").eq("id", data.repost_of).single();
     if (original && original.user_id !== user.id) {
       await createNotification(original.user_id, "repost", {
         actor_id: user.id,
@@ -80,7 +80,7 @@ export async function createPost(data: {
   if (mentions) {
     const usernames = [...new Set(mentions.map((m) => m.substring(1)))].slice(0, 5);
     if (usernames.length > 0) {
-      const { data: mentionedUsers } = await sb()
+      const { data: mentionedUsers } = await (await createServerSupabase())
         .from("users")
         .select("id, username")
         .in("username", usernames);
@@ -101,7 +101,7 @@ export async function createPost(data: {
   }
 
   // Increment reputation
-  await sb().rpc("increment_reputation", { user_id_param: user.id, amount: 1 });
+  await (await createServerSupabase()).rpc("increment_reputation", { user_id_param: user.id, amount: 1 });
 
   revalidatePath("/feed");
   return { success: true, post };
@@ -116,7 +116,7 @@ export async function getFeedPosts(options: {
   limit?: number;
   userId?: string;
 }) {
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
   const limit = options.limit || 20;
 
   let query = supabase
@@ -159,7 +159,7 @@ export async function getFeedPosts(options: {
 /*  GET SINGLE POST + REPLIES                  */
 /* ═══════════════════════════════════════════ */
 export async function getPost(postId: string) {
-  const { data } = await sb()
+  const { data } = await (await createServerSupabase())
     .from("posts")
     .select("*, users(id, display_name, avatar_url, username, role)")
     .eq("id", postId)
@@ -168,7 +168,7 @@ export async function getPost(postId: string) {
 }
 
 export async function getPostReplies(postId: string) {
-  const { data } = await sb()
+  const { data } = await (await createServerSupabase())
     .from("posts")
     .select("*, users(id, display_name, avatar_url, username, role)")
     .eq("parent_id", postId)
@@ -181,7 +181,7 @@ export async function getPostReplies(postId: string) {
 /* ═══════════════════════════════════════════ */
 export async function toggleLike(postId: string) {
   const user = await requireMember();
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
 
   const { data: existing } = await supabase
     .from("likes")

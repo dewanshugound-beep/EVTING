@@ -5,7 +5,7 @@ import { getDbUser } from "@/lib/actions";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "@/app/feed/actions";
 
-const sb = () => createServerSupabase();
+// Using await createServerSupabase() directly in functions for async safety
 
 /* ═══════════════════════════════════════════ */
 /*  SUBMIT DEV TAG REQUEST                     */
@@ -17,7 +17,7 @@ export async function submitDevRequest(reason: string, portfolioUrl: string) {
   if (user.role === "admin") return { error: "Admins already have full access" };
 
   // Check for existing pending request
-  const { data: existing } = await sb()
+  const { data: existing } = await (await createServerSupabase())
     .from("dev_requests")
     .select("id, status")
     .eq("user_id", user.id)
@@ -26,7 +26,7 @@ export async function submitDevRequest(reason: string, portfolioUrl: string) {
 
   if (existing) return { error: "You already have a pending request" };
 
-  const { error } = await sb()
+  const { error } = await (await createServerSupabase())
     .from("dev_requests")
     .insert({
       user_id: user.id,
@@ -45,7 +45,7 @@ export async function getMyDevRequest() {
   const user = await getDbUser();
   if (!user) return null;
 
-  const { data } = await sb()
+  const { data } = await (await createServerSupabase())
     .from("dev_requests")
     .select("*")
     .eq("user_id", user.id)
@@ -63,7 +63,7 @@ export async function getDevRequests(status?: string) {
   const user = await getDbUser();
   if (!user || user.role !== "admin") throw new Error("Admin access required");
 
-  let query = sb()
+  let query = (await createServerSupabase())
     .from("dev_requests")
     .select("*, users(id, display_name, username, avatar_url, created_at, role)")
     .order("created_at", { ascending: false });
@@ -83,7 +83,7 @@ export async function approveDevRequest(requestId: string) {
   const admin = await getDbUser();
   if (!admin || admin.role !== "admin") throw new Error("Admin access required");
 
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
 
   // Get the request
   const { data: request } = await supabase
@@ -122,7 +122,7 @@ export async function rejectDevRequest(requestId: string, reason: string) {
   const admin = await getDbUser();
   if (!admin || admin.role !== "admin") throw new Error("Admin access required");
 
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
 
   const { data: request } = await supabase
     .from("dev_requests")
@@ -154,7 +154,7 @@ export async function adminGetUsers(search?: string) {
   const admin = await getDbUser();
   if (!admin || admin.role !== "admin") throw new Error("Admin access required");
 
-  let query = sb()
+  let query = (await createServerSupabase())
     .from("users")
     .select("*")
     .order("created_at", { ascending: false })
@@ -172,7 +172,7 @@ export async function adminBanUser(userId: string) {
   const admin = await getDbUser();
   if (!admin || admin.role !== "admin") throw new Error("Admin access required");
 
-  await sb().from("users").update({ is_banned: true }).eq("id", userId);
+  await (await createServerSupabase()).from("users").update({ is_banned: true }).eq("id", userId);
   await createNotification(userId, "ban", { message: "Your account has been suspended." });
 
   revalidatePath("/admin");
@@ -183,7 +183,7 @@ export async function adminUnbanUser(userId: string) {
   const admin = await getDbUser();
   if (!admin || admin.role !== "admin") throw new Error("Admin access required");
 
-  await sb().from("users").update({ is_banned: false }).eq("id", userId);
+  await (await createServerSupabase()).from("users").update({ is_banned: false }).eq("id", userId);
   revalidatePath("/admin");
   return { success: true };
 }
@@ -194,7 +194,7 @@ export async function adminSetRole(userId: string, role: string) {
 
   if (!["member", "dev", "admin"].includes(role)) return { error: "Invalid role" };
 
-  await sb().from("users").update({ role }).eq("id", userId);
+  await (await createServerSupabase()).from("users").update({ role }).eq("id", userId);
   revalidatePath("/admin");
   return { success: true };
 }

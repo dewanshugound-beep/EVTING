@@ -5,7 +5,7 @@ import { currentUser } from "@/lib/auth";
 
 export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;
-  const sb = createServerSupabase();
+  const sb = await createServerSupabase();
 
   // Fetch the profile user
   const { data: profileUser } = await sb
