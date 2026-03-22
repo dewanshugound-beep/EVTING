@@ -14,25 +14,30 @@ export default function BookmarksPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user?.id) return;
-    const sb = createBrowserSupabase();
-    sb.from("bookmarks")
-      .select("post_id, posts(*, users(id, display_name, avatar_url, username, role))")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(50)
-      .then(({ data, error }) => {
+    async function fetchBookmarks() {
+      if (!user?.id) return;
+      try {
+        const sb = createBrowserSupabase();
+        const { data, error } = await sb
+          .from("bookmarks")
+          .select("post_id, posts(*, users(id, display_name, avatar_url, username, role))")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(50);
+
         if (error) {
           console.error("Failed to fetch bookmarks:", error);
         } else {
           setPosts((data || []).map((b: any) => b.posts).filter(Boolean));
         }
-        setLoading(false);
-      })
-      .catch(err => {
+      } catch (err) {
         console.error("Unexpected bookmarks error:", err);
+      } finally {
         setLoading(false);
-      });
+      }
+    }
+
+    fetchBookmarks();
   }, [user?.id]);
 
   if (loading) return <div className="flex justify-center py-20"><Loader2 size={24} className="animate-spin text-accent" /></div>;
