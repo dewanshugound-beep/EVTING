@@ -51,7 +51,7 @@ export default function LoginPage() {
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: `${window.location.origin}/api/auth/callback?next=/feed` },
+        options: { emailRedirectTo: "https://evting.vercel.app/" },
       });
       if (error) throw error;
       setMagicSent(true);
@@ -68,7 +68,7 @@ export default function LoginPage() {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+        options: { redirectTo: "https://evting.vercel.app/" },
       });
       if (error) throw error;
     } catch (err: any) {

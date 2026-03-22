@@ -84,7 +84,7 @@ export default function RegisterPage() {
     setLoading(provider);
     await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: `${window.location.origin}/api/auth/callback` },
+      options: { redirectTo: "https://evting.vercel.app/" },
     });
   };
 
