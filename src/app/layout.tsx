@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ClerkProvider } from "@clerk/nextjs";
-import { dark } from "@clerk/themes";
 import { Toaster } from "sonner";
 import Sidebar from "@/components/Sidebar";
 import Navbar from "@/components/Navbar";
@@ -61,42 +59,30 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider
-      appearance={{
-        baseTheme: dark,
-        variables: {
-          colorPrimary: "#3b82f6",
-          colorBackground: "#0a0a0f",
-          colorInputBackground: "#111118",
-          colorText: "#e4e4e7",
-        },
-      }}
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
-      <html
-        lang="en"
-        className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
-      >
-        <body className="min-h-full bg-background text-foreground">
-          <VisitorTracker />
-          <BroadcastListener />
-          <Sidebar />
-          <Navbar />
-          <main className="ml-[68px] pt-14">
-            <PageTransition>{children}</PageTransition>
-          </main>
-          <Toaster
-            theme="dark"
-            position="bottom-right"
-            toastOptions={{
-              style: {
-                background: "#111118",
-                border: "1px solid #1a1a2e",
-                color: "#e4e4e7",
-              },
-            }}
-          />
-        </body>
-      </html>
-    </ClerkProvider>
+      <body className="min-h-full bg-background text-foreground">
+        <VisitorTracker />
+        <BroadcastListener />
+        <Sidebar />
+        <Navbar />
+        <main className="ml-[68px] pt-14">
+          <PageTransition>{children}</PageTransition>
+        </main>
+        <Toaster
+          theme="dark"
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: "#111118",
+              border: "1px solid #1a1a2e",
+              color: "#e4e4e7",
+            },
+          }}
+        />
+      </body>
+    </html>
   );
 }

@@ -5,10 +5,16 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: '**',
+        protocol: "https",
+        hostname: "**",
       },
     ],
+  },
+  experimental: {
+    // Ensure correct project root for Turbopack
+  },
+  turbopack: {
+    root: "C:/Users/Administrator/evting-hub",
   },
 };
 

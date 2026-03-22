@@ -1,4 +1,4 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { currentUser } from "@/lib/auth";
 import { getChannels, getMessages } from "./actions";
 import ChatClient from "@/components/chat/ChatClient";
 

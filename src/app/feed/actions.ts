@@ -75,6 +75,30 @@ export async function createPost(data: {
     }
   }
 
+  // Check for @mentions and notify users
+  const mentions = data.content.match(/@(\w+)/g);
+  if (mentions) {
+    const usernames = [...new Set(mentions.map((m) => m.substring(1)))];
+    if (usernames.length > 0) {
+      const { data: mentionedUsers } = await sb()
+        .from("users")
+        .select("id, username")
+        .in("username", usernames);
+
+      if (mentionedUsers && mentionedUsers.length > 0) {
+        for (const mu of mentionedUsers) {
+          if (mu.id !== user.id) {
+            await createNotification(mu.id, "mention", {
+              actor_id: user.id,
+              actor_name: user.display_name || user.username,
+              post_id: post.id,
+            });
+          }
+        }
+      }
+    }
+  }
+
   // Increment reputation
   await sb().rpc("increment_reputation", { user_id_param: user.id, amount: 1 });
 

@@ -16,7 +16,7 @@ import {
   Settings,
   LayoutDashboard,
 } from "lucide-react";
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useAuth, useUser } from "@/lib/auth-hooks";
 import { useEffect, useState } from "react";
 import { createBrowserSupabase } from "@/lib/supabase";
 

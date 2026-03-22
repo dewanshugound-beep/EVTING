@@ -13,7 +13,7 @@ import {
   CheckCircle,
   AlertTriangle,
 } from "lucide-react";
-import { useUser } from "@clerk/nextjs";
+import { useUser } from "@/lib/auth-hooks";
 import { createBrowserSupabase } from "@/lib/supabase";
 
 const SECTIONS = [
@@ -125,9 +125,11 @@ export default function SettingsPage() {
             <div className="space-y-5">
               <h2 className="text-lg font-black text-white">Profile</h2>
 
-              {/* Avatar info (Clerk managed) */}
+              {/* Avatar info */}
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 text-sm text-zinc-400">
-                Your avatar and email are managed by Clerk. Click your avatar in the top-right to update them.
+                <p className="font-bold text-zinc-300 mb-1">Account Info</p>
+                <p>Email: <span className="text-white font-mono">{user?.email || "—"}</span></p>
+                <p className="text-xs mt-1">To change your avatar, upload an image via your profile page at <span className="text-accent">/u/{user?.username || "username"}</span></p>
               </div>
 
               <div>
@@ -222,7 +224,7 @@ export default function SettingsPage() {
               <h2 className="text-lg font-black text-white">Privacy & Security</h2>
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 text-sm text-zinc-400 space-y-3">
                 <p className="font-bold text-zinc-300">Password & 2FA</p>
-                <p>Authentication is managed via Clerk. Use the profile menu to update your password or enable two-factor authentication.</p>
+                <p>To change your password, sign out and use the "Forgot Password" link on the login page. 2FA can be enabled from your security settings after verifying your email.</p>
               </div>
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5 space-y-3">
                 <p className="text-sm font-bold text-white">Profile Visibility</p>

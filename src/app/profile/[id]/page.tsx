@@ -1,4 +1,4 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { currentUser } from "@/lib/auth";
 import { getProfile, isFollowing } from "../actions";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import YouTubeEmbed from "@/components/profile/YouTubeEmbed";

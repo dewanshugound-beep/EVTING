@@ -1,4 +1,4 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { currentUser } from "@/lib/auth";
 import { getProject, getComments, hasStarred, recordView } from "../actions";
 import ProjectDetailClient from "@/components/project/ProjectDetailClient";
 

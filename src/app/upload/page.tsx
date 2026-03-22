@@ -21,7 +21,7 @@ import {
   Loader2,
   X,
 } from "lucide-react";
-import { useUser } from "@clerk/nextjs";
+import { useUser } from "@/lib/auth-hooks";
 import { createBrowserSupabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import Link from "next/link";

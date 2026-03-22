@@ -18,7 +18,7 @@ import { reportVaultContent } from "@/app/explore/actions";
 import { createBrowserSupabase } from "@/lib/supabase";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import { useUser } from "@clerk/nextjs";
+import { useUser } from "@/lib/auth-hooks";
 import { Virtuoso } from "react-virtuoso";
 import Image from "next/image";
 

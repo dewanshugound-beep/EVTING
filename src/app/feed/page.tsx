@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { useUser, useAuth } from "@clerk/nextjs";
+import { useUser, useAuth } from "@/lib/auth-hooks";
 import {
   createPost,
   getFeedPosts,
@@ -75,14 +75,18 @@ function PostCard({
           </div>
         );
       }
-      // Render hashtags as links
-      const rendered = part.split(/(#\w+)/g).map((seg, j) => {
+      // Render hashtags and mentions as links
+      const tokenized = part.split(/(#\w+|@\w+)/g).map((seg, j) => {
         if (seg.startsWith("#")) {
-          return <span key={j} className="text-accent cursor-pointer hover:underline">{seg}</span>;
+          return <Link href={`/explore?q=${encodeURIComponent(seg)}`} key={j} className="text-accent cursor-pointer hover:underline">{seg}</Link>;
+        }
+        if (seg.startsWith("@")) {
+          const username = seg.substring(1);
+          return <Link href={`/u/${username}`} key={j} className="text-neon-purple cursor-pointer hover:underline">{seg}</Link>;
         }
         return <span key={j}>{seg}</span>;
       });
-      return <span key={i}>{rendered}</span>;
+      return <span key={i}>{tokenized}</span>;
     });
   };
 

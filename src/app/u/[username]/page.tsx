@@ -1,7 +1,7 @@
 import { createServerSupabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import ProfileClient from "./ProfileClient";
-import { currentUser } from "@clerk/nextjs/server";
+import { currentUser } from "@/lib/auth";
 
 export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;

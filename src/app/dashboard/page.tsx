@@ -1,123 +1,226 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
-import { createServerSupabase } from "@/lib/supabase";
-import { Shield, Target, Trophy, Star, Activity, Plus, TrendingUp, CalendarDays } from "lucide-react";
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import {
+  LayoutDashboard, TrendingUp, Heart, Eye, Download, Star,
+  MessageCircle, BarChart3, Loader2, ArrowUpRight, Package, Users, Zap
+} from "lucide-react";
+import { createBrowserSupabase } from "@/lib/supabase";
+import { useUser } from "@/lib/auth-hooks";
 import Link from "next/link";
-import { format } from "date-fns";
+import { useRouter } from "next/navigation";
 
-export default async function DashboardPage() {
-  const { userId } = await auth();
+export default function DashboardPage() {
+  const { user, isLoaded } = useUser();
+  const router = useRouter();
+  const [stats, setStats] = useState({
+    totalPosts: 0, totalLikes: 0, totalFollowers: 0, totalFollowing: 0,
+    totalListings: 0, totalDownloads: 0, totalStars: 0, totalViews: 0,
+    xp: 0, level: 1, reputation: 0,
+  });
+  const [recentPosts, setRecentPosts] = useState<any[]>([]);
+  const [listings, setListings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  if (!userId) {
-    redirect("/sign-in");
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!user) { router.push("/login"); return; }
+    loadDashboard();
+  }, [user, isLoaded]);
+
+  async function loadDashboard() {
+    if (!user) return;
+    const sb = createBrowserSupabase();
+    const [
+      { count: postCount },
+      { count: followerCount },
+      { count: followingCount },
+      { data: postsData },
+      { data: listingsData },
+      { data: userData },
+    ] = await Promise.all([
+      sb.from("posts").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+      sb.from("follows").select("*", { count: "exact", head: true }).eq("following_id", user.id),
+      sb.from("follows").select("*", { count: "exact", head: true }).eq("follower_id", user.id),
+      sb.from("posts").select("id, content, like_count, comment_count, created_at").eq("user_id", user.id)
+        .order("created_at", { ascending: false }).limit(5),
+      sb.from("store_listings").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
+      sb.from("users").select("xp, level, reputation").eq("id", user.id).single(),
+    ]);
+
+    const totalLikes = (postsData || []).reduce((s: number, p: any) => s + (p.like_count || 0), 0);
+    const totalDownloads = (listingsData || []).reduce((s: number, l: any) => s + (l.download_count || 0), 0);
+    const totalStars = (listingsData || []).reduce((s: number, l: any) => s + (l.star_count || 0), 0);
+
+    setStats({
+      totalPosts: postCount || 0,
+      totalLikes,
+      totalFollowers: followerCount || 0,
+      totalFollowing: followingCount || 0,
+      totalListings: listingsData?.length || 0,
+      totalDownloads,
+      totalStars,
+      totalViews: 0,
+      xp: (userData as any)?.xp || user.xp || 0,
+      level: (userData as any)?.level || user.level || 1,
+      reputation: (userData as any)?.reputation || user.reputation || 0,
+    });
+    setRecentPosts(postsData || []);
+    setListings(listingsData || []);
+    setLoading(false);
   }
 
-  const sb = createServerSupabase();
-  const { data: user, error } = await sb
-    .from("users")
-    .select("*")
-    .eq("id", userId)
-    .single();
+  if (loading) return <div className="flex justify-center py-20"><Loader2 size={24} className="animate-spin text-accent" /></div>;
 
-  if (error || !user) {
-    // If the webhook hasn't fired yet or failed, just show a loading state or retry
-    return (
-      <div className="flex h-[80vh] w-full flex-col items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-accent border-t-transparent" />
-        <p className="mt-4 text-sm text-zinc-400">Syncing your profile...</p>
-      </div>
-    );
-  }
-
-  // Calculate progress to next level
-  const xpForNextLevel = user.level * 1000;
-  const progressPercent = Math.min(100, Math.max(0, (user.xp / xpForNextLevel) * 100));
+  const xpToNextLevel = stats.level * 500;
+  const xpProgress = (stats.xp % xpToNextLevel) / xpToNextLevel * 100;
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
-      <header className="mb-10">
-        <h1 className="text-3xl font-black text-white tracking-tight">Your Dashboard</h1>
-        <p className="text-zinc-500 mt-1">Overview of your activity and reputation.</p>
-      </header>
-
-      {/* Main Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
-        <div className="p-6 rounded-2xl bg-surface-light border border-white/5 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <Trophy size={60} />
-          </div>
-          <div className="relative z-10">
-            <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">Current Level</p>
-            <p className="text-5xl font-black text-white">{user.level}</p>
-          </div>
+    <div className="min-h-screen max-w-5xl mx-auto px-6 py-8">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-8">
+        <div className="p-2 rounded-xl bg-accent/10 border border-accent/20">
+          <LayoutDashboard className="text-accent" size={20} />
         </div>
-
-        <div className="p-6 rounded-2xl bg-surface-light border border-white/5 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <Target size={60} className="text-neon-green" />
-          </div>
-          <div className="relative z-10">
-            <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">Total XP</p>
-            <p className="text-5xl font-black text-neon-green">{user.xp}</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-black text-white">Dashboard</h1>
+          <p className="text-xs text-zinc-500">Your personal analytics overview</p>
         </div>
+      </div>
 
-        <div className="p-6 rounded-2xl bg-surface-light border border-white/5 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <Star size={60} className="text-yellow-500" />
-          </div>
-          <div className="relative z-10">
-            <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">Reputation</p>
-            <p className="text-5xl font-black text-yellow-500">{user.reputation_score}</p>
-          </div>
-        </div>
-
-        <div className="p-6 rounded-2xl bg-surface-light border border-white/5 flex flex-col justify-center">
-          <div className="flex items-center gap-3 mb-2">
-            <Shield size={16} className={user.role === 'admin' ? 'text-red-500' : 'text-accent'} />
-            <span className="text-sm font-bold capitalize text-white">{user.role}</span>
-          </div>
+      {/* Level & XP bar */}
+      <div className="mb-6 p-5 rounded-2xl border border-white/5 bg-white/[0.02]">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
-            <CalendarDays size={16} className="text-zinc-500" />
-            <span className="text-xs text-zinc-400">Joined {format(new Date(user.created_at), "MMM yyyy")}</span>
+            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-accent/20 to-neon-purple/20 border border-accent/30 flex items-center justify-center text-sm font-black text-accent">
+              {stats.level}
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white">Level {stats.level}</p>
+              <p className="text-xs text-zinc-600">{stats.xp.toLocaleString()} / {(stats.level * 500).toLocaleString()} XP</p>
+            </div>
           </div>
+          <div className="flex items-center gap-4">
+            <div className="text-center">
+              <p className="text-lg font-black text-amber-400">{stats.reputation}</p>
+              <p className="text-[10px] text-zinc-600">Reputation</p>
+            </div>
+            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border capitalize ${
+              user?.role === "admin" ? "text-red-400 bg-red-500/10 border-red-500/20" :
+              user?.role === "certified_dev" ? "text-amber-400 bg-amber-500/10 border-amber-500/20" :
+              user?.role === "dev" ? "text-accent bg-accent/10 border-accent/20" :
+              "text-zinc-500 bg-zinc-800/80 border-zinc-700"
+            }`}>{user?.role}</span>
+          </div>
+        </div>
+        <div className="relative h-2 bg-white/5 rounded-full overflow-hidden">
+          <motion.div
+            className="absolute left-0 top-0 h-full bg-gradient-to-r from-accent to-neon-purple rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: `${xpProgress}%` }}
+            transition={{ duration: 1, ease: "easeOut" }}
+          />
         </div>
       </div>
 
-      {/* Level Progress */}
-      <div className="mb-12 p-6 rounded-2xl bg-gradient-to-r from-zinc-900 to-black border border-white/5 shadow-2xl">
-        <div className="flex justify-between items-end mb-4">
-          <div>
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <TrendingUp size={18} className="text-accent" /> Road to Level {user.level + 1}
-            </h3>
-            <p className="text-xs text-zinc-400 mt-1">Earn more XP by contributing.</p>
-          </div>
-          <p className="text-sm font-bold text-zinc-500">{user.xp} / {xpForNextLevel} XP</p>
-        </div>
-        <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-gradient-to-r from-accent to-neon-purple rounded-full relative"
-            style={{ width: `${progressPercent}%` }}
-          >
-            <div className="absolute inset-0 bg-white/20 animate-pulse" />
-          </div>
-        </div>
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        {[
+          { label: "Posts", value: stats.totalPosts, icon: BarChart3, color: "text-accent" },
+          { label: "Total Likes", value: stats.totalLikes, icon: Heart, color: "text-red-400" },
+          { label: "Followers", value: stats.totalFollowers, icon: Users, color: "text-neon-purple" },
+          { label: "Following", value: stats.totalFollowing, icon: Users, color: "text-zinc-400" },
+          { label: "Listings", value: stats.totalListings, icon: Package, color: "text-neon-green" },
+          { label: "Downloads", value: stats.totalDownloads, icon: Download, color: "text-emerald-400" },
+          { label: "Stars", value: stats.totalStars, icon: Star, color: "text-amber-400" },
+          { label: "Views", value: stats.totalViews, icon: Eye, color: "text-zinc-400" },
+        ].map(({ label, value, icon: Icon, color }) => (
+          <motion.div key={label}
+            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            className="p-4 rounded-2xl border border-white/5 bg-white/[0.02]">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] text-zinc-600 uppercase tracking-widest">{label}</p>
+              <Icon size={14} className={color} />
+            </div>
+            <p className={`text-2xl font-black ${color}`}>{value.toLocaleString()}</p>
+          </motion.div>
+        ))}
       </div>
 
-      {/* Quick Actions */}
-      <div>
-        <h2 className="text-xl font-bold text-white mb-4">Quick Actions</h2>
-        <div className="flex gap-4">
-          <Link href="/upload" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-accent hover:bg-blue-500 text-white font-bold text-sm transition-colors shadow-lg shadow-accent/20">
-            <Plus size={16} /> New Project
+      {/* Quick actions */}
+      <div className="grid grid-cols-3 gap-3 mb-8">
+        {[
+          { label: "Write Post", href: "/feed", icon: MessageCircle, color: "bg-accent/10 text-accent border-accent/20" },
+          { label: "Upload Tool", href: "/store/upload", icon: Zap, color: "bg-neon-green/10 text-neon-green border-neon-green/20" },
+          { label: "My Profile", href: `/u/${user?.username}`, icon: Users, color: "bg-neon-purple/10 text-neon-purple border-neon-purple/20" },
+        ].map(({ label, href, icon: Icon, color }) => (
+          <Link key={label} href={href}
+            className={`flex items-center gap-2 p-4 rounded-2xl border transition-all hover:scale-[1.02] ${color}`}>
+            <Icon size={16} />
+            <span className="text-sm font-bold">{label}</span>
+            <ArrowUpRight size={12} className="ml-auto opacity-60" />
           </Link>
-          <Link href={`/u/${user.username}`} className="flex items-center gap-2 px-6 py-3 rounded-xl bg-surface-light hover:bg-white/10 border border-white/5 text-white font-bold text-sm transition-colors">
-            View Public Profile
-          </Link>
-          <Link href="/settings" className="flex items-center gap-2 px-6 py-3 rounded-xl bg-surface-light hover:bg-white/10 border border-white/5 text-white font-bold text-sm transition-colors">
-            Settings
-          </Link>
+        ))}
+      </div>
+
+      {/* Recent Posts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+          <h2 className="text-sm font-black text-white mb-3 flex items-center gap-2">
+            <TrendingUp size={14} className="text-accent" /> Recent Posts
+          </h2>
+          <div className="space-y-2">
+            {recentPosts.length === 0 ? (
+              <p className="text-xs text-zinc-700 py-4">No posts yet. <Link href="/feed" className="text-accent">Write one!</Link></p>
+            ) : (
+              recentPosts.map(post => (
+                <Link key={post.id} href={`/post/${post.id}`}
+                  className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-all">
+                  <p className="text-xs text-zinc-400 truncate flex-1">{post.content?.slice(0, 60)}...</p>
+                  <div className="flex items-center gap-3 shrink-0 ml-3">
+                    <span className="flex items-center gap-0.5 text-[10px] text-zinc-600"><Heart size={10} />{post.like_count || 0}</span>
+                    <span className="flex items-center gap-0.5 text-[10px] text-zinc-600"><MessageCircle size={10} />{post.comment_count || 0}</span>
+                  </div>
+                </Link>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-sm font-black text-white mb-3 flex items-center gap-2">
+            <Package size={14} className="text-neon-green" /> Store Listings
+          </h2>
+          <div className="space-y-2">
+            {listings.length === 0 ? (
+              <div className="text-xs text-zinc-700 py-4">
+                No listings yet.
+                {(user?.role === "dev" || user?.role === "certified_dev" || user?.role === "admin") ? (
+                  <Link href="/store/upload" className="text-neon-green ml-1">Upload your first tool!</Link>
+                ) : (
+                  <Link href="/request-dev-tag" className="text-accent ml-1">Request Dev access</Link>
+                )}
+              </div>
+            ) : (
+              listings.map(listing => (
+                <Link key={listing.id} href={`/store/${listing.slug}`}
+                  className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-all">
+                  <div>
+                    <p className="text-xs text-white font-bold">{listing.title}</p>
+                    <span className={`text-[9px] font-bold ${
+                      listing.status === "approved" ? "text-neon-green" :
+                      listing.status === "pending" ? "text-amber-400" : "text-red-400"
+                    }`}>{listing.status}</span>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="flex items-center gap-0.5 text-[10px] text-zinc-600"><Download size={10} />{listing.download_count || 0}</span>
+                    <span className="flex items-center gap-0.5 text-[10px] text-zinc-600"><Star size={10} />{listing.star_count || 0}</span>
+                  </div>
+                </Link>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>

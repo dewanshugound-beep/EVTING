@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { useUser } from "@clerk/nextjs";
+import { useUser } from "@/lib/auth-hooks";
 import {
   toggleListingStar,
   recordDownload,

@@ -18,7 +18,7 @@ import {
   Zap,
   Package,
 } from "lucide-react";
-import { useUser } from "@clerk/nextjs";
+import { useUser } from "@/lib/auth-hooks";
 import { getNotifications, markNotificationsRead } from "@/app/feed/actions";
 
 const typeIcons: Record<string, any> = {

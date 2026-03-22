@@ -1,7 +1,7 @@
 import { createServerSupabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import SinglePostClient from "./SinglePostClient";
-import { currentUser } from "@clerk/nextjs/server";
+import { currentUser } from "@/lib/auth";
 
 export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
