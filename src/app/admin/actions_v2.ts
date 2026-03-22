@@ -219,7 +219,7 @@ export async function adminGetReports(status?: string) {
   const admin = await getDbUser();
   if (!admin || admin.role !== "admin") throw new Error("Admin access required");
 
-  let query = sb()
+  let query = (await createServerSupabase())
     .from("reports")
     .select("*")
     .order("created_at", { ascending: false });
@@ -236,7 +236,7 @@ export async function adminDismissReport(reportId: string) {
   const admin = await getDbUser();
   if (!admin || admin.role !== "admin") throw new Error("Admin access required");
 
-  await sb().from("reports").update({ status: "dismissed" }).eq("id", reportId);
+  await (await createServerSupabase()).from("reports").update({ status: "dismissed" }).eq("id", reportId);
   revalidatePath("/admin");
   return { success: true };
 }
@@ -248,7 +248,7 @@ export async function getAdminStats() {
   const admin = await getDbUser();
   if (!admin || admin.role !== "admin") throw new Error("Admin access required");
 
-  const supabase = sb();
+  const supabase = (await createServerSupabase());
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
   const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -293,7 +293,7 @@ export async function reportContent(
   const user = await getDbUser();
   if (!user) throw new Error("Unauthorized");
 
-  await sb().from("reports").insert({
+  await (await createServerSupabase()).from("reports").insert({
     reporter_id: user.id,
     target_type: targetType,
     target_id: targetId,
