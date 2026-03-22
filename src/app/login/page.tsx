@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createBrowserSupabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
@@ -17,6 +17,8 @@ import {
   MessageSquare,
   Twitter,
   ArrowRight,
+  User,
+  LogOut,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -44,6 +46,27 @@ export default function LoginPage() {
     }
     setLoading(null);
   };
+
+  const [sessionUser, setSessionUser] = useState<any>(null);
+
+  useEffect(() => {
+    // Check session on load
+    async function checkSession() {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSessionUser(session?.user ?? null);
+    }
+    checkSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSessionUser(session?.user ?? null);
+      if (session?.user) {
+        toast.success("Welcome back!");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,36 +138,74 @@ export default function LoginPage() {
 
         <div className="rounded-2xl border border-white/[0.08] bg-black/50 backdrop-blur-2xl p-6 shadow-2xl shadow-black/60">
           {/* OAuth providers */}
-          <div className="grid grid-cols-2 gap-2 mb-5">
-            <OAuthButton
-              icon={<Github size={16} />}
-              label="GitHub"
-              onClick={() => handleOAuth("github")}
-              loading={loading === "github"}
-            />
-            <OAuthButton
-              icon={<GoogleIcon />}
-              label="Google"
-              onClick={() => handleOAuth("google")}
-              loading={loading === "google"}
-            />
-            <OAuthButton
-              icon={<MessageSquare size={16} />}
-              label="Discord"
-              onClick={() => handleOAuth("discord")}
-              loading={loading === "discord"}
-            />
-            <OAuthButton
-              icon={<Twitter size={16} />}
-              label="Twitter"
-              onClick={() => handleOAuth("twitter")}
-              loading={loading === "twitter"}
-            />
-          </div>
+          {sessionUser ? (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center gap-5 py-6">
+              <div className="relative group">
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-violet-600 rounded-full blur opacity-40 group-hover:opacity-60 transition duration-1000 group-hover:duration-200"></div>
+                <div className="relative h-20 w-20 rounded-full border-2 border-white/10 p-1 bg-zinc-900">
+                  {sessionUser.user_metadata.picture ? (
+                    <img src={sessionUser.user_metadata.picture} alt="" className="w-full h-full rounded-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full rounded-full bg-zinc-800 flex items-center justify-center">
+                      <User size={32} className="text-zinc-600" />
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="text-center">
+                <h2 className="text-xl font-black text-white tracking-tight">{sessionUser.user_metadata.full_name || sessionUser.email}</h2>
+                <p className="text-zinc-500 text-sm mt-0.5">Logged in via {sessionUser.app_metadata.provider || "email"}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <Link href="/feed" className="flex items-center justify-center gap-2 h-11 rounded-xl bg-white/5 border border-white/[0.08] text-sm text-white font-bold hover:bg-white/10 transition-all">
+                  Dashboard
+                </Link>
+                <button 
+                  onClick={() => supabase.auth.signOut()} 
+                  className="flex items-center justify-center gap-2 h-11 rounded-xl bg-red-500/10 border border-red-500/20 text-sm text-red-500 font-bold hover:bg-red-500/20 transition-all cursor-pointer"
+                >
+                  <LogOut size={16} /> Sign Out
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <>
+              {/* OAuth Providers */}
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                <OAuthButton
+                  icon={<GoogleIcon />}
+                  label="Google"
+                  onClick={() => handleOAuth("google")}
+                  loading={loading === "google"}
+                />
+                <OAuthButton
+                  icon={<Github size={16} />}
+                  label="GitHub"
+                  onClick={() => handleOAuth("github")}
+                  loading={loading === "github"}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                <OAuthButton
+                  icon={<MessageSquare size={16} />}
+                  label="Discord"
+                  onClick={() => handleOAuth("discord")}
+                  loading={loading === "discord"}
+                />
+                <OAuthButton
+                  icon={<Twitter size={15} />}
+                  label="Twitter"
+                  onClick={() => handleOAuth("twitter")}
+                  loading={loading === "twitter"}
+                />
+              </div>
+            </>
+          )}
 
           <div className="relative flex items-center gap-3 mb-5">
             <div className="flex-1 h-px bg-white/8" />
-            <span className="text-[11px] text-zinc-600 font-medium">or continue with email</span>
+            <span className="text-[11px] text-zinc-600 font-medium lowercase tracking-wider opacity-60">or continue with email</span>
             <div className="flex-1 h-px bg-white/8" />
           </div>
 
